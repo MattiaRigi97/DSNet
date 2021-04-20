@@ -14,13 +14,13 @@ def evaluate(model, val_loader, nms_thresh, device):
     model.eval()
     stats = data_helper.AverageMeter('fscore', 'diversity')
 
-    with torch.no_grad():
+    with torch.no_grad(): #Disabling gradient calculation is useful for inference
         for test_key, seq, _, cps, n_frames, nfps, picks, user_summary in val_loader:
             seq_len = len(seq)
-            seq_torch = torch.from_numpy(seq).unsqueeze(0).to(device)
+            seq_torch = torch.from_numpy(seq).unsqueeze(0).to(device) #unsqueeze add axes
 
             pred_cls, pred_bboxes = model.predict(seq_torch)
-
+            # Given an interval, values outside the interval are clipped to the interval edges. 
             pred_bboxes = np.clip(pred_bboxes, 0, seq_len).round().astype(np.int32)
 
             pred_cls, pred_bboxes = bbox_helper.nms(pred_cls, pred_bboxes, nms_thresh)
