@@ -1,9 +1,9 @@
 This file contain the train-test split in the three considered mode:
 
 <ul>
-<li>Canonical</li>
-<li>Augmented</li>
-<li>Transfer settings</li>
+  <li>Canonical</li>
+  <li>Augmented</li>
+  <li>Transfer settings</li>
 </ul>
 
 For canonical and augmented settings, we randomly divided the dataset into 5 splits. In the canonical setting, 80% of the dataset was used for training, 
