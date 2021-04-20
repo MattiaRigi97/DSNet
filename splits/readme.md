@@ -1,4 +1,4 @@
-This file contain the train-test split in the three considered mode:
+This file contain the train-test split for the three considered mode:
 
 <ul>
   <li>Canonical</li>
