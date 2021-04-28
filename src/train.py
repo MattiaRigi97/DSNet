@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 
+# Import train functions defined in the anchor based or anchor free scripts
 from anchor_based.train import train as train_anchor_based
 from anchor_free.train import train as train_anchor_free
 from helpers import init_helper, data_helper
