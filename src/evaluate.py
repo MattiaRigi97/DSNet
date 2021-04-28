@@ -7,6 +7,10 @@ import torch
 from helpers import init_helper, data_helper, vsumm_helper, bbox_helper
 from modules.model_zoo import get_model
 
+# This module defines functions and classes which implement a flexible event logging system;
+# The key benefit is that all Python modules can participate in logging, so your application log 
+# can include your own messages integrated with messages from third-party modules.
+
 logger = logging.getLogger()
 
 
