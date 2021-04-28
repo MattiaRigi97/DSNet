@@ -5,6 +5,8 @@ import numpy as np
 
 from kts.cpd_auto import cpd_auto
 
+# This script import the kts (kernel temporal segmentation) that automatically select the number of change points (cpd_auto)
+# and for each video in the selected dataset, make the shots. This allow to divide video into shots that are utilized in next phase.
 
 def main():
     parser = argparse.ArgumentParser()
@@ -35,7 +37,7 @@ def main():
         # For each segment, calculate the number of frames
         n_frame_per_seg = end_frames - begin_frames
         
-        # Add the video info on the new dataset (that contain shots)
+        # Add the video info in the new dataset (that contain shots)
         h5out.create_dataset(video_name + '/features', data=features)                   # add features
         h5out.create_dataset(video_name + '/gtscore', data=gtscore)                     # add ground truth score  
         # h5out.create_dataset(name + '/user_summary', data=data_of_name)   
