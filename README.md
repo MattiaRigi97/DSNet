@@ -167,3 +167,163 @@ If you find our codes or paper helpful, please consider citing.
   year={2020}
 }
 ```
+
+```
+DSNet
+├─ .git
+│  ├─ COMMIT_EDITMSG
+│  ├─ config
+│  ├─ description
+│  ├─ FETCH_HEAD
+│  ├─ HEAD
+│  ├─ hooks
+│  │  ├─ applypatch-msg.sample
+│  │  ├─ commit-msg.sample
+│  │  ├─ fsmonitor-watchman.sample
+│  │  ├─ post-update.sample
+│  │  ├─ pre-applypatch.sample
+│  │  ├─ pre-commit.sample
+│  │  ├─ pre-merge-commit.sample
+│  │  ├─ pre-push.sample
+│  │  ├─ pre-rebase.sample
+│  │  ├─ pre-receive.sample
+│  │  ├─ prepare-commit-msg.sample
+│  │  ├─ push-to-checkout.sample
+│  │  └─ update.sample
+│  ├─ index
+│  ├─ info
+│  │  └─ exclude
+│  ├─ logs
+│  │  ├─ HEAD
+│  │  └─ refs
+│  │     ├─ heads
+│  │     │  └─ main
+│  │     └─ remotes
+│  │        └─ origin
+│  │           ├─ HEAD
+│  │           └─ main
+│  ├─ objects
+│  │  ├─ 1b
+│  │  │  └─ e28d4aaf6ca0a65190192e98f8c397d0478a68
+│  │  ├─ 1c
+│  │  │  └─ e9778314f7b2dd07681dc5296364f77cbb8e07
+│  │  ├─ 28
+│  │  │  └─ 8b55b7862ed8704f8ca0a3a6f649f9db33c756
+│  │  ├─ 2f
+│  │  │  └─ 37ce14b62cf7bdc6bb89f48d2fb562a1fa578a
+│  │  ├─ 39
+│  │  │  └─ 31fc2b073728c42c0c025391ac82401d0331fc
+│  │  ├─ 3f
+│  │  │  └─ 2036880b9e1cea10c06df7dccdb47179e82fcc
+│  │  ├─ 40
+│  │  │  └─ 5c3411c3518885121cd07bd8a098819f518996
+│  │  ├─ 5f
+│  │  │  └─ ce8cb6450c4cada1476ddb0d0eea7f89987306
+│  │  ├─ 63
+│  │  │  └─ 94d18db85029b0847b5ddd26c7f00f1204f04f
+│  │  ├─ 69
+│  │  │  └─ 66fe842a4794db780fd333a0a89bc306e2fa5d
+│  │  ├─ 6b
+│  │  │  └─ bded04a20140500119e36bb6b112f41faff6b2
+│  │  ├─ 8d
+│  │  │  └─ 878d2f4fd149402022256d14938094266550a4
+│  │  ├─ 91
+│  │  │  └─ 6e0a5dba34d0e222405fce4054af7a8d53d8e5
+│  │  ├─ 92
+│  │  │  └─ 75be2c561bbc151d34787ac4f00ffcfc180a97
+│  │  ├─ 9f
+│  │  │  └─ fc4e69d62de5be90ca99df594ba74119dbaba9
+│  │  ├─ a9
+│  │  │  └─ a5765a8c24c0359a9d3f7f3667775d6eed4bdc
+│  │  ├─ b4
+│  │  │  ├─ 096780ae8bf791c884c79ff0c3e1a34c786343
+│  │  │  └─ 4dfab2d621389ba71e7f34e7affe3593b562e9
+│  │  ├─ c5
+│  │  │  └─ 9e19a861be43e0a9284dfffaeb0fe25d17685b
+│  │  ├─ e5
+│  │  │  └─ 2ac1c7155e7d77d2e8da05de353a5de6ac464a
+│  │  ├─ info
+│  │  └─ pack
+│  │     ├─ pack-4d3d8fd211ad53c586189201257b46271c026feb.idx
+│  │     └─ pack-4d3d8fd211ad53c586189201257b46271c026feb.pack
+│  ├─ ORIG_HEAD
+│  ├─ packed-refs
+│  └─ refs
+│     ├─ heads
+│     │  └─ main
+│     ├─ remotes
+│     │  └─ origin
+│     │     ├─ HEAD
+│     │     └─ main
+│     └─ tags
+├─ .github
+│  └─ workflows
+│     └─ unit-test.yml
+├─ .gitignore
+├─ docs
+│  └─ framework.jpg
+├─ LICENSE
+├─ README.md
+├─ requirements.txt
+├─ splits
+│  ├─ readme.md
+│  ├─ summe.yml
+│  ├─ summe_aug.yml
+│  ├─ summe_trans.yml
+│  ├─ tvsum.yml
+│  ├─ tvsum_aug.yml
+│  └─ tvsum_trans.yml
+├─ src
+│  ├─ anchor_based
+│  │  ├─ anchor_helper.py
+│  │  ├─ dsnet.py
+│  │  ├─ losses.py
+│  │  └─ train.py
+│  ├─ anchor_free
+│  │  ├─ anchor_free_helper.py
+│  │  ├─ dsnet_af.py
+│  │  ├─ losses.py
+│  │  └─ train.py
+│  ├─ evaluate.py
+│  ├─ helpers
+│  │  ├─ bbox_helper.py
+│  │  ├─ data_helper.py
+│  │  ├─ init_helper.py
+│  │  └─ vsumm_helper.py
+│  ├─ kts
+│  │  ├─ cpd_auto.py
+│  │  ├─ cpd_nonlin.py
+│  │  ├─ demo.py
+│  │  ├─ LICENSE
+│  │  └─ README.md
+│  ├─ make_shots.py
+│  ├─ make_split.py
+│  ├─ modules
+│  │  ├─ models.py
+│  │  └─ model_zoo.py
+│  ├─ output_file
+│  │  └─ evaluation.txt
+│  ├─ read_h5_file.py
+│  └─ train.py
+└─ tests
+   ├─ anchor_based
+   │  ├─ test_ab_losses.py
+   │  ├─ test_anchor_helper.py
+   │  └─ __init__.py
+   ├─ anchor_free
+   │  ├─ test_af_losses.py
+   │  ├─ test_anchor_free_helper.py
+   │  └─ __init__.py
+   ├─ helpers
+   │  ├─ test_bbox_helper.py
+   │  ├─ test_data_helper.py
+   │  ├─ test_vsumm_helper.py
+   │  └─ __init__.py
+   ├─ mock_run.sh
+   ├─ modules
+   │  ├─ test_models.py
+   │  └─ __init__.py
+   ├─ test_train.py
+   └─ __init__.py
+
+```
