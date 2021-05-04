@@ -1,5 +1,3 @@
-# Prova
-
 # DSNet: A Flexible Detect-to-Summarize Network for Video Summarization [[paper]](https://ieeexplore.ieee.org/document/9275314)
 
 [![UnitTest](https://github.com/li-plus/DSNet/workflows/UnitTest/badge.svg)](https://github.com/li-plus/DSNet/actions)
@@ -44,8 +42,8 @@ unzip dsnet_datasets.zip
 
 If the Dropbox link is unavailable to you, try downloading from below links.
 
-+ (Baidu Cloud) Link: https://pan.baidu.com/s/1LUK2aZzLvgNwbK07BUAQRQ Extraction Code: x09b
-+ (Google Drive) https://drive.google.com/file/d/11ulsvk1MZI7iDqymw9cfL7csAYS0cDYH/view?usp=sharing
++ (Baidu Cloud) Link: <https://pan.baidu.com/s/1LUK2aZzLvgNwbK07BUAQRQ> Extraction Code: x09b
++ (Google Drive) <https://drive.google.com/file/d/11ulsvk1MZI7iDqymw9cfL7csAYS0cDYH/view?usp=sharing>
 
 Now the datasets structure should look like
 
