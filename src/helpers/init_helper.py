@@ -76,6 +76,7 @@ def get_parser() -> argparse.ArgumentParser:
 
 
 def get_arguments() -> argparse.Namespace:
+    
     parser = get_parser()
     args = parser.parse_args()
     return args

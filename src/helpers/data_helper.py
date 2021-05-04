@@ -18,8 +18,11 @@ class VideoDataset(object):
         video_path = Path(key)
         dataset_name = str(video_path.parent)
         video_name = video_path.name
+        # video_file is a HDF5 group object
         video_file = self.datasets[dataset_name][video_name]
+        ##print(video_file)
 
+        # Load all data
         seq = video_file['features'][...].astype(np.float32)
         gtscore = video_file['gtscore'][...].astype(np.float32)
         cps = video_file['change_points'][...].astype(np.int32)
@@ -41,6 +44,7 @@ class VideoDataset(object):
     @staticmethod
     def get_datasets(keys: List[str]) -> Dict[str, h5py.File]:
         dataset_paths = {str(Path(key).parent) for key in keys}
+        ##print(keys)
         datasets = {path: h5py.File(path, 'r') for path in dataset_paths}
         return datasets
 
