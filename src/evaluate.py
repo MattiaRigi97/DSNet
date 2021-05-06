@@ -27,6 +27,7 @@ def evaluate(model, val_loader, nms_thresh, device):
             
             #print("seq: " + str(seq)) 
             #print("seq shape: " + str(seq.shape)+ "\n")
+            #print(type(seq))
 
             #print("cps: " + str(cps))
             #print("cps shape: " + str(cps.shape) + "\n")
@@ -75,6 +76,7 @@ def evaluate(model, val_loader, nms_thresh, device):
 
             #Down-sample the summary by 15 times
             pred_summ = vsumm_helper.downsample_summ(pred_summ)
+            #print("pred summary: " + str(pred_summ[0:5]))
             #print("pred summary shape: " + str(pred_summ.shape))
             #print("\n\n")
 

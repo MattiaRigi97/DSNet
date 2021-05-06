@@ -7,6 +7,7 @@ import h5py
 import numpy as np
 import yaml
 
+import imageio
 
 class VideoDataset(object):
     def __init__(self, keys: List[str]):
@@ -111,3 +112,16 @@ def load_yaml(path: PathLike) -> Any:
 def dump_yaml(obj: Any, path: PathLike) -> None:
     with open(path, 'w') as f:
         yaml.dump(obj, f)
+
+def open_video(video_name, video_path, sampling_interval, printing = True):
+	if printing:
+		print("Opening " + str(video_name[:-4]) + " video! \n")
+	video = imageio.get_reader(video_path + "\\" + video_name)
+	n_frame_video = video.count_frames()
+	#choosing the subset of frames from which video summary will be generateed
+	frames = [video.get_data(i*sampling_interval) for i in range(int(n_frame_video/sampling_interval))]
+	idx_frames=[i*sampling_interval for i in range(int(n_frame_video/sampling_interval))]
+	if printing:
+		print ("\t Length of video %d" % n_frame_video)
+		print ("\t Considered frames %d" % len(frames))
+	return video, frames, idx_frames, n_frame_video

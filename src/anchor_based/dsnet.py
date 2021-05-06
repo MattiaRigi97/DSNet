@@ -19,8 +19,9 @@ class DSNet(nn.Module):
         self.roi_poolings = [nn.AvgPool1d(scale, stride=1, padding=scale // 2)
                              for scale in anchor_scales]
 
-        # Append the classification branch
         self.layer_norm = nn.LayerNorm(num_feature)
+
+        # Append the shared FC Layer
         self.fc1 = nn.Sequential(
             nn.Linear(num_feature, num_hidden),
             nn.Tanh(),

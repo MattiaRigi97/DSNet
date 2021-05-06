@@ -38,7 +38,7 @@ def get_pos_label(anchors: np.ndarray,
     cls_label = np.zeros(seq_len * num_scales, dtype=np.int32)
 
     for target in targets:
-        target = np.tile(target, (seq_len * num_scales, 1))
+        target = np.tile(target, (seq_len * num_scales, 1)) # Construct an array by repeating A the number of times given by reps.
         iou = bbox_helper.iou_cw(anchors, target)
         pos_idx = np.where(iou > iou_thresh)
         cls_label[pos_idx] = 1

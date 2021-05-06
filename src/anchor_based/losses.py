@@ -1,7 +1,7 @@
 import torch
 from torch.nn import functional as F
 
-
+# L_reg (location loss)
 def calc_loc_loss(pred_loc: torch.Tensor,
                   test_loc: torch.Tensor,
                   cls_label: torch.Tensor,
@@ -28,7 +28,7 @@ def calc_loc_loss(pred_loc: torch.Tensor,
 
     return loc_loss
 
-
+# L_cls (location loss)
 def calc_cls_loss(pred: torch.Tensor, test: torch.Tensor) -> torch.Tensor:
     """Compute classification loss.
 

@@ -46,6 +46,8 @@ def train(args, split, save_path):
         stats = data_helper.AverageMeter('loss', 'cls_loss', 'loc_loss')
 
         for _, seq, gtscore, cps, n_frames, nfps, picks, _ in train_loader:
+            # Obtain a keyshot summary from gtscore (the 1D-array with shape (n_steps), 
+            # stores ground truth improtance score (used for training)
             keyshot_summ = vsumm_helper.get_keyshot_summ(
                 gtscore, cps, n_frames, nfps, picks)
             target = vsumm_helper.downsample_summ(keyshot_summ)
@@ -56,6 +58,7 @@ def train(args, split, save_path):
             target_bboxes = bbox_helper.seq2bbox(target)
             target_bboxes = bbox_helper.lr2cw(target_bboxes)
             anchors = anchor_helper.get_anchors(target.size, args.anchor_scales)
+            
             # Get class and location label for positive samples
             cls_label, loc_label = anchor_helper.get_pos_label(
                 anchors, target_bboxes, args.pos_iou_thresh)
@@ -83,20 +86,23 @@ def train(args, split, save_path):
 
             seq = torch.tensor(seq, dtype=torch.float32).unsqueeze(0).to(args.device)
 
+            # Pass 2D-array features (seq) into the models
             pred_cls, pred_loc = model(seq)
 
+            # Calculate loss functions
             loc_loss = calc_loc_loss(pred_loc, loc_label, cls_label)
             cls_loss = calc_cls_loss(pred_cls, cls_label)
-
             loss = cls_loss + args.lambda_reg * loc_loss
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-
+            
+            # Update loss functions for each video
             stats.update(loss=loss.item(), cls_loss=cls_loss.item(),
                          loc_loss=loc_loss.item())
 
+        # For each epoch, evaluate the model
         val_fscore, _ = evaluate(model, val_loader, args.nms_thresh, args.device)
 
         if max_val_fscore < val_fscore:

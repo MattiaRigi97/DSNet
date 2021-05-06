@@ -7,9 +7,11 @@ from modules.models import build_base_model
 class DSNetAF(nn.Module):
     def __init__(self, base_model, num_feature, num_hidden, num_head):
         super().__init__()
+        # Build a base model with the temporal feature extractor (attention, lstm, ecc.) 
         self.base_model = build_base_model(base_model, num_feature, num_head)
         self.layer_norm = nn.LayerNorm(num_feature)
 
+        # Append the shared FC Layer
         self.fc1 = nn.Sequential(
             nn.Linear(num_feature, num_hidden),
             nn.ReLU(inplace=True),
@@ -20,22 +22,24 @@ class DSNetAF(nn.Module):
         self.fc_loc = nn.Linear(num_hidden, 2)
         self.fc_ctr = nn.Linear(num_hidden, 1)
 
+    # Define a forward function that take in inputs the LeNet Features (x)
     def forward(self, x):
         _, seq_len, _ = x.shape
-        out = self.base_model(x)
+        out = self.base_model(x)        # extract temporal features
+        out = out + x                   # sum temporal features with LeNet Features 
+        out = self.layer_norm(out)      # pass through the normalization layer
 
-        out = out + x
-        out = self.layer_norm(out)
-
-        out = self.fc1(out)
-
+        out = self.fc1(out)             # pass through the shared branch
+        
+        # Pass to the classification and regression branches
         pred_cls = self.fc_cls(out).sigmoid().view(seq_len)
         pred_loc = self.fc_loc(out).exp().view(seq_len, 2)
-
+        # Pass to the center-ness branch
         pred_ctr = self.fc_ctr(out).sigmoid().view(seq_len)
 
         return pred_cls, pred_loc, pred_ctr
-
+    
+    # Define a function for prediction 
     def predict(self, seq):
         pred_cls, pred_loc, pred_ctr = self(seq)
 

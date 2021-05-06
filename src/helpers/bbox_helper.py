@@ -24,6 +24,7 @@ def cw2lr(bbox_cw: np.ndarray) -> np.ndarray:
     :param bbox_cw: CW bounding boxes. Sized [N, 2].
     :return: LR bounding boxes. Sized [N, 2].
     """
+    # from np.array([[15,10],[50,7]]) to array([[10. , 20. ],[46.5, 53.5]])
     bbox_cw = np.asarray(bbox_cw, dtype=np.float32).reshape((-1, 2))
     left = bbox_cw[:, 0] - bbox_cw[:, 1] / 2
     right = bbox_cw[:, 0] + bbox_cw[:, 1] / 2
@@ -32,7 +33,7 @@ def cw2lr(bbox_cw: np.ndarray) -> np.ndarray:
 
 
 def seq2bbox(sequence: np.ndarray) -> np.ndarray:
-    """Generate CW bbox from binary sequence mask"""
+    """Generate LR bbox from binary sequence mask"""
     sequence = np.asarray(sequence, dtype=np.bool)
     selected_indices, = np.where(sequence == 1)
 
@@ -88,10 +89,11 @@ def nms(scores: np.ndarray,
         threshold will be filtered.
     :return: Remaining bboxes and its scores.
     """
-    valid_idx = bboxes[:, 0] < bboxes[:, 1]
+    valid_idx = bboxes[:, 0] < bboxes[:, 1] # overlap segments
     scores = scores[valid_idx]
     bboxes = bboxes[valid_idx]
 
+    # First element in arg_desc is index of most important segment
     arg_desc = scores.argsort()[::-1]
 
     scores_remain = scores[arg_desc]
