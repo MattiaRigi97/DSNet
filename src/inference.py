@@ -1,4 +1,6 @@
 # python inference.py anchor-free --model-dir ../models/pretrain_af_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --nms-thresh 0.4
+# python inference.py anchor-based --model-dir ../models/pretrain_ab_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --nms-thresh 0.4
+
 # python inference.py anchor-based --model-dir ../models/ab_tvsum_aug/ --splits ../splits/tvsum_aug.yml
 
 import logging
@@ -9,6 +11,7 @@ from matplotlib import cm
 
 from helpers import init_helper, data_helper, vsumm_helper, bbox_helper
 from helpers.data_helper import open_video
+from helpers.data_helper import write_video_from_frame
 
 from modules.model_zoo import get_model
 from kts.cpd_auto import cpd_auto
@@ -17,6 +20,7 @@ import torch
 from torch import optim, nn
 from torchvision import models, transforms
 
+import cv2
 from PIL import Image
 import imageio
 
@@ -26,14 +30,15 @@ logger = logging.getLogger()
 
 
 
-def inference(model, feat_extr, frames, preprocess, nms_thresh, device):
+def inference(model, feat_extr, frames, n_frame_video, preprocess, nms_thresh, device):
     
     model.eval()
 
     with torch.no_grad():
 
         # Extract LeNet Features for all the frames
-        seq = np.asarray([])
+        #seq = np.asarray([])
+        seq = []
         for frame in frames:
             im = Image.fromarray(frame)
             input_tensor = preprocess(im)
@@ -46,53 +51,76 @@ def inference(model, feat_extr, frames, preprocess, nms_thresh, device):
 
             with torch.no_grad():
                 output = feat_extr(input_batch)
-
+            #seq.append(np.asarray(output[0].cpu(), dtype=np.float32))
             seq = np.append(seq, output[0].cpu())
 
         # From 1D Array to 2D array (each of 1024 elements)
         seq = np.reshape(seq, (-1,1024))
         seq = np.asarray(seq, dtype=np.float32)
-
         seq_len = len(seq)
+
+        print("seq: " + str(seq)) 
+        print("seq shape: " + str(seq.shape)+ "\n")
+        #print(type(seq))
 
         # Model prediction
         seq_torch = torch.from_numpy(seq).unsqueeze(0).to(device)
-        print(seq_torch.shape)
         pred_cls, pred_bboxes = model.predict(seq_torch)
 
-        #print("min e max: " + str(pred_cls.min()) + ' ' + str(pred_cls.max()))
-        #print("pred_cls shape: " + str(pred_cls.shape) + "\n")
-        #print("pred_boxes: " + str(pred_bboxes[0:5]))
-        #print("pred_boxes shape: " + str(pred_bboxes.shape) + "\n")
+        print("OUTPUT")
+        print("******************************************************")
+        print("pred_cls: " + str(pred_cls[30:50]))
+        print("min e max: " + str(pred_cls.min()) + ' ' + str(pred_cls.max()))
+        print("pred_cls shape: " + str(pred_cls.shape) + "\n")
+        print("pred_boxes: " + str(pred_bboxes[30:50]))
+        print("pred_boxes shape: " + str(pred_bboxes.shape) + "\n")
 
         # Compress and round all value between 0 and seq_len
         pred_bboxes = np.clip(pred_bboxes, 0, seq_len).round().astype(np.int32)
-        #print("pred_boxes: " + str(pred_bboxes[0:5]))
+        print("pred_boxes shape: " + str(pred_bboxes.shape) + "\n")
+        print("pred_boxes: " + str(pred_bboxes[30:50]))
         
         # Apply NMS to pred_cls (condifence scores of segments) and to LR bboxes
         pred_cls, pred_bboxes = bbox_helper.nms(pred_cls, pred_bboxes, nms_thresh)
-        #print("\nApply NMS")
-        #print("pred_cls shape: " + str(pred_cls.shape))
-        #print("pred_boxes shape: " + str(pred_bboxes.shape) + "\n")
+        print("\nApply NMS")
+        print("pred_cls shape: " + str(pred_cls.shape))
+        print("pred_boxes: " + str(pred_bboxes[30:50]))
+        print("pred_boxes shape: " + str(pred_bboxes.shape) + "\n")
 
         # Apply KTS
-        n_frames = len(frames) #n_frames = seq_len * 15 - 1 
+        #n_frames = seq_len * 15 - 1 
+        print("N_Video Frame: " + str(n_frame_video) + "\n")
         picks = np.arange(0, seq_len) * 15 # array([    0,    15,    30,    45,    60, ...])
+        print("picks: " + str(picks))
+        print("picks shape: " + str(picks.shape) + "\n")
+
         kernel = np.matmul(seq, seq.T) # Matrix product of two arrays
+        print("AAAAAAAAAAAAA" + str(kernel))
+        print("AAAAAAAAAAAAA" + str(kernel.shape))
+        print("SEQ LEN" + str(seq_len))
         change_points, _ = cpd_auto(kernel, seq_len - 1, 1) # Call of the KTS Function
+        print("cps: " + str(change_points))
         change_points *= 15
-        change_points = np.hstack((0, change_points, n_frames))
+        print("cps: " + str(change_points))
+        change_points = np.hstack((0, change_points, n_frame_video))
         begin_frames = change_points[:-1]
         end_frames = change_points[1:]
+        
         change_points = np.vstack((begin_frames, end_frames - 1)).T
+        print("cps: " + str(change_points))
+        print("cps shape: " + str(change_points.shape) + "\n")
+
         # Here, the change points are detected (Change-point positions t0, t1, ..., t_{m-1})
         n_frame_per_seg = end_frames - begin_frames  # For each segment, calculate the number of frames
+        print("nfps: " + str(n_frame_per_seg))   
+        print("nfps shape: " + str(n_frame_per_seg.shape) + "\n")   
 
         # Convert predicted bounding boxes to summary
-        pred_summ = vsumm_helper.bbox2summary(seq_len, pred_cls, pred_bboxes, change_points, n_frames, n_frame_per_seg, picks)
-        #print("pred summary: " + str(pred_summ[0:5])) # True, False list
-        #print("pred summary shape: " + str(pred_summ.shape) + "\n")
-            
+        pred_summ = vsumm_helper.bbox2summary(seq_len, pred_cls, pred_bboxes, change_points, n_frame_video, n_frame_per_seg, picks)
+        print("pred summary: " + str(pred_summ[0:5])) # True, False list
+        print("pred summary len: " + str(sum(pred_summ))) 
+        print("pred summary shape: " + str(pred_summ.shape) + "\n")
+    
     return pred_summ
 
 
@@ -130,11 +158,14 @@ def main():
             model.load_state_dict(state_dict)
 
     # Specify video file
-    video_path = r"C:\Users\matti\OneDrive - Universita degli Studi di Milano-Bicocca\Uni\LM-DataScience\Tesi+Stage\Dataset\TVSum\ydata-tvsum50-v1_1\ydata-tvsum50-v1_1\video"
-    video_name = "eQu1rNs0an0.mp4"
+    #video_path = r"C:\Users\matti\OneDrive - Universita degli Studi di Milano-Bicocca\Uni\LM-DataScience\Tesi+Stage\Dataset\TVSum\ydata-tvsum50-v1_1\ydata-tvsum50-v1_1\video"
+    #video_name = "_xMr-HKMfVA.mp4"
+
+    video_path = r"C:\Users\matti\OneDrive - Universita degli Studi di Milano-Bicocca\Uni\LM-DataScience\Tesi+Stage\Dataset\SumMe\SumMe\videos"
+    video_name = "Fire Domino.mp4"
     
     # Load video
-    video, frames, idx_frames, n_frame_video = open_video(video_name, video_path, sampling_interval=15)
+    video, frames, frames_sel, n_frame_video = open_video(video_name, video_path, sampling_interval=15)
 
     # Initialize the model
     lenet = models.googlenet(pretrained=True)
@@ -151,15 +182,18 @@ def main():
     feat_extr = feat_extr.to(device)
 
     # Run inference
-    pred_summ = inference(model, feat_extr, frames, preprocess, args.nms_thresh, args.device)
-
-    print(sum(pred_summ))
-    print(pred_summ.shape)
+    pred_summ = inference(model, feat_extr, frames_sel, n_frame_video, preprocess, args.nms_thresh, args.device)
     
-    # Visualize video
     # Trasform and save in .mp4 file 
+    pred_summ = np.array(pred_summ) # True False Mask
+    frames = np.array(frames)
+    print("All frames: " + str(frames.shape))
 
+    final_summary = frames[pred_summ,:]
+    print("Final summary frames: " + str(final_summary.shape))
 
+    output_video_path = r"C:\Users\matti\github\DSNet\output_video"
+    write_video_from_frame(output_video_path, video_name, final_summary)
 
 if __name__ == '__main__':
     main()

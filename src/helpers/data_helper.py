@@ -7,6 +7,7 @@ import h5py
 import numpy as np
 import yaml
 
+import cv2
 import imageio
 
 class VideoDataset(object):
@@ -113,15 +114,41 @@ def dump_yaml(obj: Any, path: PathLike) -> None:
     with open(path, 'w') as f:
         yaml.dump(obj, f)
 
+
 def open_video(video_name, video_path, sampling_interval, printing = True):
 	if printing:
-		print("Opening " + str(video_name[:-4]) + " video! \n")
+		print("\nOpening " + str(video_name[:-4]) + " video! \n")
+	
 	video = imageio.get_reader(video_path + "\\" + video_name)
 	n_frame_video = video.count_frames()
-	#choosing the subset of frames from which video summary will be generateed
-	frames = [video.get_data(i*sampling_interval) for i in range(int(n_frame_video/sampling_interval))]
-	idx_frames=[i*sampling_interval for i in range(int(n_frame_video/sampling_interval))]
+	
+	# Read all the frames
+	idx_frames = list(range(0,n_frame_video-1,1))
+	frames = [video.get_data(i) for i in range(0,n_frame_video)]
+
+    # Frames subset
+	idx_frames_sel = idx_frames[::sampling_interval]
+	frames_sel = frames[::sampling_interval]
+
 	if printing:
-		print ("\t Length of video %d" % n_frame_video)
-		print ("\t Considered frames %d" % len(frames))
-	return video, frames, idx_frames, n_frame_video
+		print ("\tLength of video %d" % n_frame_video)
+		print ("\tConsidered frames %d" % len(frames_sel))
+		print ("\n")
+	return video, frames, frames_sel, n_frame_video
+
+# Function for writing the video from a sequence of frames
+def write_video_from_frame(output_path, video_name, summ_frames, printing=True):
+	if printing:
+		print("\n Writing the video summary..")
+	fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+	height, width, channels = summ_frames[0].shape
+	filename = output_path + "\\" + video_name[:-4] + "_" + "skimvideo.mp4"
+	out = cv2.VideoWriter(filename, fourcc, 20, (width, height))
+	for frame in summ_frames:
+		frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+		out.write(frame)
+	out.release()
+	if printing:
+		print("\t Video summary of " + str(video_name[:-4]) + " saved \n")
+		print("\t " + "..\\" + filename)
+	return None
