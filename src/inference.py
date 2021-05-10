@@ -28,6 +28,11 @@ from feature_extraction import FeatureExtractor
 
 logger = logging.getLogger()
 
+def scale(X, x_min, x_max):
+    nom = (X-X.min(axis=0))*(x_max-x_min)
+    denom = X.max(axis=0) - X.min(axis=0)
+    denom[denom==0] = 1
+    return x_min + nom/denom 
 
 
 def inference(model, feat_extr, frames, n_frame_video, preprocess, nms_thresh, device):
@@ -55,10 +60,12 @@ def inference(model, feat_extr, frames, n_frame_video, preprocess, nms_thresh, d
             seq = np.append(seq, output[0].cpu())
 
         # From 1D Array to 2D array (each of 1024 elements)
+        print("MIN: "+str(seq.min()))
+        print("MAX: "+str(seq.max()))
         seq = np.reshape(seq, (-1,1024))
         seq = np.asarray(seq, dtype=np.float32)
         seq_len = len(seq)
-
+        
         print("seq: " + str(seq)) 
         print("seq shape: " + str(seq.shape)+ "\n")
         #print(type(seq))
@@ -95,10 +102,11 @@ def inference(model, feat_extr, frames, n_frame_video, preprocess, nms_thresh, d
         print("picks shape: " + str(picks.shape) + "\n")
 
         kernel = np.matmul(seq, seq.T) # Matrix product of two arrays
-        print("AAAAAAAAAAAAA" + str(kernel))
-        print("AAAAAAAAAAAAA" + str(kernel.shape))
-        print("SEQ LEN" + str(seq_len))
-        change_points, _ = cpd_auto(kernel, seq_len - 1, 1) # Call of the KTS Function
+        kernel = scale(kernel, 0, 1)
+        print("*************\n" + str(kernel))
+        print("*************\n" + str(kernel.shape))
+        print("SEQ LEN: " + str(seq_len))
+        change_points, _ = cpd_auto(K = kernel, ncp = seq_len-1, vmax = 1 ) # Call of the KTS Function
         print("cps: " + str(change_points))
         change_points *= 15
         print("cps: " + str(change_points))
@@ -158,11 +166,11 @@ def main():
             model.load_state_dict(state_dict)
 
     # Specify video file
-    #video_path = r"C:\Users\matti\OneDrive - Universita degli Studi di Milano-Bicocca\Uni\LM-DataScience\Tesi+Stage\Dataset\TVSum\ydata-tvsum50-v1_1\ydata-tvsum50-v1_1\video"
-    #video_name = "_xMr-HKMfVA.mp4"
+    video_path = r"C:\Users\matti\OneDrive - Universita degli Studi di Milano-Bicocca\Uni\LM-DataScience\Tesi+Stage\Dataset\TVSum\ydata-tvsum50-v1_1\ydata-tvsum50-v1_1\video"
+    video_name = "_xMr-HKMfVA.mp4"
 
-    video_path = r"C:\Users\matti\OneDrive - Universita degli Studi di Milano-Bicocca\Uni\LM-DataScience\Tesi+Stage\Dataset\SumMe\SumMe\videos"
-    video_name = "Fire Domino.mp4"
+    #video_path = r"C:\Users\matti\OneDrive - Universita degli Studi di Milano-Bicocca\Uni\LM-DataScience\Tesi+Stage\Dataset\SumMe\SumMe\videos"
+    #video_name = "Fire Domino.mp4"
     
     # Load video
     video, frames, frames_sel, n_frame_video = open_video(video_name, video_path, sampling_interval=15)

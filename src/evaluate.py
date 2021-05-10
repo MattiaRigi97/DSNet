@@ -20,7 +20,8 @@ def evaluate(model, val_loader, nms_thresh, device):
     with torch.no_grad():
         # For each video
         for test_key, seq, _, cps, n_frames, nfps, picks, user_summary in val_loader:
-            
+            print("MIN: "+str(seq.min()))
+            print("MAX: "+str(seq.max()))
             #print("INPUT")
             #print("******************************************************")
             #print("test_key: " + str(test_key) + "\n")    
@@ -42,6 +43,7 @@ def evaluate(model, val_loader, nms_thresh, device):
             #print("user_summary shape: " + str(user_summary.shape) + "\n")   
 
             seq_len = len(seq)
+            #print(seq_len)
 
             # Model prediction
             seq_torch = torch.from_numpy(seq).unsqueeze(0).to(device)
@@ -69,7 +71,7 @@ def evaluate(model, val_loader, nms_thresh, device):
             pred_summ = vsumm_helper.bbox2summary(seq_len, pred_cls, pred_bboxes, cps, n_frames, nfps, picks)
             #print("pred summary: " + str(pred_summ[0:5])) # True, False list
             #print("pred summary shape: " + str(pred_summ.shape) + "\n")
-            
+
             # Compute F-Measure
             eval_metric = 'avg' if 'tvsum' in test_key else 'max'
             fscore = vsumm_helper.get_summ_f1score(pred_summ, user_summary, eval_metric)

@@ -12,7 +12,7 @@ def gen_data(n, m, d=1):
         sigma is proportional to m
 
     :param n: Number of samples
-    :param m: Number of change-points
+    :param m: Number of change-pointscd
     :param d:
     :return: Tuple (X, cps)
         - X - data array (n X d)
