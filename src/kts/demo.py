@@ -1,6 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
+import kts
 from kts.cpd_auto import cpd_auto
 from kts.cpd_nonlin import cpd_nonlin
 

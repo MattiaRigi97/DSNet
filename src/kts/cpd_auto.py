@@ -28,7 +28,7 @@ def cpd_auto(K, ncp, vmax, desc_rate=1, **kwargs):
     costs = scores / float(N) + penalties
     m_best = np.argmin(costs)
     m_best = round((N*15) / 450,0)
-    print("M BEST: " + str(m_best))
+    # print("M BEST: " + str(m_best))
     cps, scores2 = cpd_nonlin(K, m_best, **kwargs)
 
     return cps, scores2

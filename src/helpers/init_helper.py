@@ -6,6 +6,11 @@ from pathlib import Path
 import numpy as np
 import torch
 
+def dir_path(string):
+    if os.path.isdir(string):
+        return string
+    else:
+        raise NotADirectoryError(string)
 
 def set_random_seed(seed: int) -> None:
     random.seed(seed)
@@ -72,6 +77,11 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--reg-loss', type=str, default='soft-iou',
                         choices=['soft-iou', 'smooth-l1'])
 
+    # inference
+    parser.add_argument('--video_path', type=str, default="../video")
+    parser.add_argument('--video_name', type=str, default="_xMr-HKMfVA.mp4")
+    parser.add_argument('--output_path', type=str, default="../output_video")
+    
     return parser
 
 

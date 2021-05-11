@@ -114,6 +114,11 @@ def dump_yaml(obj: Any, path: PathLike) -> None:
     with open(path, 'w') as f:
         yaml.dump(obj, f)
 
+def scale(X, x_min, x_max):
+    nom = (X-X.min(axis=0))*(x_max-x_min)
+    denom = X.max(axis=0) - X.min(axis=0)
+    denom[denom==0] = 1
+    return x_min + nom/denom 
 
 def open_video(video_name, video_path, sampling_interval, printing = True):
 	if printing:
@@ -137,12 +142,12 @@ def open_video(video_name, video_path, sampling_interval, printing = True):
 	return video, frames, frames_sel, n_frame_video
 
 # Function for writing the video from a sequence of frames
-def write_video_from_frame(output_path, video_name, summ_frames, printing=True):
+def write_video_from_frame(output_path, video_name, model_name, summ_frames, printing=True):
 	if printing:
 		print("\n Writing the video summary..")
 	fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 	height, width, channels = summ_frames[0].shape
-	filename = output_path + "\\" + video_name[:-4] + "_" + "skimvideo.mp4"
+	filename = output_path + "\\" + video_name[:-4] + "_" + model_name + ".mp4"
 	out = cv2.VideoWriter(filename, fourcc, 20, (width, height))
 	for frame in summ_frames:
 		frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

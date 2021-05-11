@@ -1,5 +1,10 @@
 
+## PRE-TRAINED MODELS
 # python evaluate.py anchor-free --model-dir ../models/pretrain_af_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --nms-thresh 0.4
+# python evaluate.py anchor-based --model-dir ../models/pretrain_ab_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --nms-thresh 0.4
+
+## CUSTOM MODELS
+# python evaluate.py anchor-based --model-dir ../models/ab_tvsum_aug/ --splits ../splits/tvsum_aug.yml
 
 import logging
 from pathlib import Path
@@ -20,8 +25,8 @@ def evaluate(model, val_loader, nms_thresh, device):
     with torch.no_grad():
         # For each video
         for test_key, seq, _, cps, n_frames, nfps, picks, user_summary in val_loader:
-            print("MIN: "+str(seq.min()))
-            print("MAX: "+str(seq.max()))
+            #print("MIN: "+str(seq.min()))
+            #print("MAX: "+str(seq.max()))
             #print("INPUT")
             #print("******************************************************")
             #print("test_key: " + str(test_key) + "\n")    
