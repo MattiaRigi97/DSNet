@@ -1,10 +1,10 @@
 
 ## PRE-TRAINED MODELS
-# python inference.py anchor-free --model-dir ../models/pretrain_af_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --nms-thresh 0.4 --video_name Fire_Domino.mp4
-# python inference.py anchor-based --model-dir ../models/pretrain_ab_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --nms-thresh 0.4 --video_name Fire_Domino.mp4
+# python inference_pyscene.py anchor-free --model-dir ../models/pretrain_af_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --nms-thresh 0.4 --video_name Fire_Domino.mp4
+# python inference_pyscene.py anchor-based --model-dir ../models/pretrain_ab_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --nms-thresh 0.4 --video_name Fire_Domino.mp4
 
 ## CUSTOM MODELS
-# python inference.py anchor-based --model-dir ../models/ab_tvsum_aug/ --splits ../splits/tvsum_aug.yml --video_name Fire_Domino.mp4
+# python inference_pyscene.py anchor-based --model-dir ../models/ab_tvsum_aug/ --splits ../splits/tvsum_aug.yml --video_name Fire_Domino.mp4
 
 import logging
 from pathlib import Path
@@ -18,7 +18,10 @@ from helpers.data_helper import write_video_from_frame
 from helpers.data_helper import scale
 
 from modules.model_zoo import get_model
-from kts.cpd_auto import cpd_auto
+
+#from kts.cpd_auto import cpd_auto
+from pyscenedetecor import find_scenes
+from pyscenedetecor import set_scene_parameters
 
 import torch
 from torch import optim, nn
@@ -32,7 +35,7 @@ from feature_extraction import FeatureExtractor
 
 logger = logging.getLogger()
 
-def inference(model, feat_extr, frames, n_frame_video, preprocess, nms_thresh, device):
+def inference(video_path, video_name, model, feat_extr, frames, n_frame_video, preprocess, nms_thresh, device):
     
     model.eval()
 
@@ -91,34 +94,27 @@ def inference(model, feat_extr, frames, n_frame_video, preprocess, nms_thresh, d
         # print("pred_boxes: " + str(pred_bboxes[30:50]))
         # print("pred_boxes shape: " + str(pred_bboxes.shape) + "\n")
 
-        # Apply KTS
-        #n_frames = seq_len * 15 - 1 
-        # print("N_Video Frame: " + str(n_frame_video) + "\n")
         picks = np.arange(0, seq_len) * 15 # array([    0,    15,    30,    45,    60, ...])
-        # print("picks: " + str(picks))
-        # print("picks shape: " + str(picks.shape) + "\n")
 
-        kernel = np.matmul(seq, seq.T) # Matrix product of two arrays
-        kernel = scale(kernel, 0, 1)
-        # print("*************\n" + str(kernel))
-        # print("*************\n" + str(kernel.shape))
-        # print("SEQ LEN: " + str(seq_len))
-        change_points, _ = cpd_auto(K = kernel, ncp = seq_len-1, vmax = 1 ) # Call of the KTS Function
+        # Set parameters for find_scenes of scenedetect
+        threshold, downscale_factor = set_scene_parameters(video_path, video_name)
+
+        # Apply find_scenes of scenedetect
+        scenes = find_scenes(video_path + "\\" + video_name, threshold = 5, downscale_factor)
+        print ("\n\t Considered scenes %d" % len(scenes))
+        change_points = []
+        for i in range(0,len(scenes)):
+            change_points.append([int(scenes[i][0]),int(scenes[i][1])])
+        change_points = np.asarray(change_points)
+
         # print("cps: " + str(change_points))
-        change_points *= 15
-        # print("cps: " + str(change_points))
-        change_points = np.hstack((0, change_points, n_frame_video))
-        begin_frames = change_points[:-1]
-        end_frames = change_points[1:]
+        # print("cps shape: " + str(change_points.shape) + "\n")
         
-        change_points = np.vstack((begin_frames, end_frames - 1)).T
-        print("cps: " + str(change_points))
-        print("cps shape: " + str(change_points.shape) + "\n")
+        n_frame_per_seg = [scene[1]-scene[0] for scene in change_points]
+        n_frame_per_seg = np.asarray(n_frame_per_seg)
 
-        # Here, the change points are detected (Change-point positions t0, t1, ..., t_{m-1})
-        n_frame_per_seg = end_frames - begin_frames  # For each segment, calculate the number of frames
-        print("nfps: " + str(n_frame_per_seg))   
-        print("nfps shape: " + str(n_frame_per_seg.shape) + "\n")   
+        # print("nfps: " + str(n_frame_per_seg))   
+        # print("nfps shape: " + str(n_frame_per_seg.shape) + "\n")   
 
         # Convert predicted bounding boxes to summary
         pred_summ = vsumm_helper.bbox2summary(seq_len, pred_cls, pred_bboxes, change_points, n_frame_video, n_frame_per_seg, picks)
@@ -187,7 +183,7 @@ def main():
     feat_extr = feat_extr.to(device)
 
     # Run inference
-    pred_summ = inference(model, feat_extr, frames_sel, n_frame_video, preprocess, args.nms_thresh, args.device)
+    pred_summ = inference(video_path, video_name, model, feat_extr, frames_sel, n_frame_video, preprocess, args.nms_thresh, args.device)
     
     # Trasform and save in .mp4 file 
     pred_summ = np.array(pred_summ) # True False Mask
@@ -197,7 +193,7 @@ def main():
     final_summary = frames[pred_summ,:]
     print("Final summary frames: " + str(final_summary.shape))
 
-    model_name = args.model_dir.split("/")[-2]
+    model_name = args.model_dir.split("/")[-2] + "_pyscenedetect"
 
     write_video_from_frame(output_video_path, video_name, model_name, final_summary)
 
