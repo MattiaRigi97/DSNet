@@ -2,7 +2,7 @@ import argparse
 import logging
 import random
 from pathlib import Path
-
+import os
 import numpy as np
 import torch
 
@@ -82,12 +82,13 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--video_name', type=str, default="_xMr-HKMfVA.mp4")
     parser.add_argument('--output_path', type=str, default=r"C:\Users\matti\github\DSNet\output_video")
     parser.add_argument('--segment_algo', type=str, default='kts',
-                        choices=['kts', 'osg', 'osg_sem', 'pyths', 'pycont','us'])
+                        choices=['kts', 'osg', 'osg_sem', 'pyths', 'pycont', 'random','us'])
         # kts - Kernel Temporal Segmentation
         # osg - Optimal Sequential Grouping
         # osg_sem - Optimal Sequential Grouping with CNN features
         # pyths - PySceneDetector, ThresholdDetector
         # pycont - PySceneDetector, ContentDetector
+        # random - Random select change points
         # us - Uniform Sampling
 
     

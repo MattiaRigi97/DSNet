@@ -8,6 +8,7 @@
 
 ## PACKAGE
 import cv2
+import random
 import logging
 import numpy as np
 from PIL import Image
@@ -45,7 +46,7 @@ from torchvision import models, transforms
 
 logger = logging.getLogger()
 
-def inference(model, feat_extr, video_path, frames, n_frame_video, seg_algo, preprocess, nms_thresh, device):
+def inference(model, feat_extr, filename, frames, n_frame_video, seg_algo, preprocess, nms_thresh, device):
     
     model.eval()
 
@@ -116,6 +117,7 @@ def inference(model, feat_extr, video_path, frames, n_frame_video, seg_algo, pre
             # print("SEQ LEN: " + str(seq_len))
             change_points, _ = cpd_auto(K = kernel, ncp = seq_len-1, vmax = 1 ) # Call of the KTS Function
             change_points *= 15
+            change_points = np.hstack((0, change_points, n_frame_video)) # add 0 and the last frame
             # print("cps: " + str(change_points))
             # print("cps: " + str(change_points))
         
@@ -139,20 +141,30 @@ def inference(model, feat_extr, video_path, frames, n_frame_video, seg_algo, pre
             # Find the change points
             change_points = get_optimal_sequence_add(dist_mat, K)
             change_points *= 15
+            change_points = np.hstack((0, change_points, n_frame_video)) # add 0 and the last frame
 
         if seg_algo == "pyths":
-            all_mean_value = mean_pixel_intensity_calc(video_path)
+            all_mean_value = mean_pixel_intensity_calc(filename)
             print("MEAN: " + str(all_mean_value))
-            scenes = find_scenes(video_path, th = all_mean_value, min_scene_length = 60, min_perc = 0.8)
+            scenes = find_scenes(filename, th = all_mean_value, min_scene_length = 30, min_perc = 0.8)
             # Select all the split
             change_points = []
             for scene in scenes:
                 change_points.append(int(scene[1]))
+            change_points = np.hstack((0, change_points)) # append 0 from the change point list
 
-        change_points = np.hstack((0, change_points, n_frame_video))
+        if seg_algo == "us":
+            interval = int(n_frame_video / 20)
+            change_points = np.arange(1, n_frame_video, interval)
+            change_points = np.hstack((0, change_points, n_frame_video))
+
+        if seg_algo == "random":
+            change_points = np.sort(random.sample(range(1, n_frame_video - 1), 20))
+            change_points = np.hstack((0, change_points, n_frame_video))
+
         begin_frames = change_points[:-1]
         end_frames = change_points[1:]
-        change_points = np.vstack((begin_frames, end_frames - 1)).T
+        change_points = np.vstack((begin_frames, end_frames)).T
         print("cps: " + str(change_points))
         print("cps shape: " + str(change_points.shape) + "\n")
 
@@ -209,6 +221,7 @@ def main():
     video_path = args.video_path
     video_name = args.video_name
     output_video_path = args.output_path
+    filename = video_path + "\\" + video_name
     # Define the segmentation algorithm
     seg_algo = args.segment_algo
 
@@ -230,7 +243,7 @@ def main():
     feat_extr = feat_extr.to(device)
 
     # Run inference
-    pred_summ = inference(model, feat_extr, video_path, frames_sel, n_frame_video, seg_algo, preprocess, args.nms_thresh, args.device)
+    pred_summ = inference(model, feat_extr, filename, frames_sel, n_frame_video, seg_algo, preprocess, args.nms_thresh, args.device)
     
     # Trasform and save in .mp4 file 
     pred_summ = np.array(pred_summ) # True False Mask

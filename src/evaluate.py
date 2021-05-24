@@ -1,10 +1,10 @@
 
 ## PRE-TRAINED MODELS
-# python evaluate.py anchor-free --model-dir ../models/pretrain_af_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --nms-thresh 0.4
-# python evaluate.py anchor-based --model-dir ../models/pretrain_ab_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml
+# python evaluate.py anchor-free --model-dir ../models/pretrain_af_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --nms-thresh 0.4 --segment_algo kts
+# python evaluate.py anchor-based --model-dir ../models/pretrain_ab_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --segment_algo us
 
 ## CUSTOM MODELS
-# python evaluate.py anchor-based --model-dir ../models/ab_tvsum_aug/ --splits ../splits/tvsum_aug.yml
+# python evaluate.py anchor-based --model-dir ../models/ab_tvsum_aug/ --splits ../splits/tvsum_aug.yml --segment_algo us
 
 import logging
 from pathlib import Path
@@ -15,9 +15,26 @@ import torch
 from helpers import init_helper, data_helper, vsumm_helper, bbox_helper
 from modules.model_zoo import get_model
 
+## SEGMENTATION METHODS
+# Segment Detection based on Optimal Grouping
+from segmentation.optimal_group.h_add import get_optimal_sequence_add
+from segmentation.optimal_group.h_nrm import get_optimal_sequence_nrm
+from segmentation.optimal_group.estimate_scenes_count import estimate_scenes_count
+from dictances import bhattacharyya as bt
+# Segment Detection based on KTS
+from segmentation.kts.cpd_auto import cpd_auto
+# Segment Detection with PySceneDetect
+from segmentation.pyscenedetecor import find_scenes
+from segmentation.pyscenedetecor import mean_pixel_intensity_calc
+
+# Features Extraction functions
+from feature_extraction import generate_bgr_hist
+
+import random
+
 logger = logging.getLogger()
 
-def evaluate(model, val_loader, nms_thresh, device):
+def evaluate(model, seg_algo, val_loader, nms_thresh, device):
     
     model.eval()
     stats = data_helper.AverageMeter('fscore', 'diversity')
@@ -72,7 +89,64 @@ def evaluate(model, val_loader, nms_thresh, device):
             #print("pred_cls shape: " + str(pred_cls.shape))
             #print("pred_boxes shape: " + str(pred_bboxes.shape) + "\n")
 
+            # VIDEO SEGMENTATION
+
+            if seg_algo != "kts":
+                           
+                if seg_algo == "osg" or seg_algo == "osg_sem":
+                    if seg_algo == "osg":
+                        # Extract color histogram from each frame
+                        features = generate_bgr_hist(frames, num_bins = 16)
+                        # Calculate the distance matrix
+                    else:
+                        features = seq
+                    dist_mat = np.zeros(shape=(len(features),len(features)))
+                    for i in range(0,len(features)):
+                        for j in range(0,len(features)):
+                            di = dict(enumerate(features[i], 1))
+                            dj = dict(enumerate(features[j], 1))
+                            dist_mat[i,j] = bt(di,dj)
+                    # Normalize the distance matrix
+                    dist_mat = (dist_mat - dist_mat.min()) / (dist_mat.max() - dist_mat.min())
+                    # Estimate the number of scenes/segments
+                    K = estimate_scenes_count(dist_mat)
+                    # Find the change points
+                    change_points = get_optimal_sequence_add(dist_mat, K)
+                    change_points *= 15
+                    change_points = np.hstack((0, change_points, n_frames)) # add 0 and the last frame
+
+                if seg_algo == "pyths":
+                    all_mean_value = mean_pixel_intensity_calc(filename)
+                    print("MEAN: " + str(all_mean_value))
+                    scenes = find_scenes(filename, th = all_mean_value, min_scene_length = 30, min_perc = 0.8)
+                    # Select all the split
+                    change_points = []
+                    for scene in scenes:
+                        change_points.append(int(scene[1]))
+                    change_points = np.hstack((0, change_points)) # append 0 from the change point list
+
+                if seg_algo == "us":
+                    interval = int(n_frames / 20)
+                    change_points = np.arange(1, n_frames, interval)
+                    change_points = np.hstack((0, change_points, n_frames))
+
+                if seg_algo == "random":
+                    change_points = np.sort(random.sample(range(1, n_frames - 1), 20))
+                    change_points = np.hstack((0, change_points, n_frames))
+
+                begin_frames = change_points[:-1]
+                end_frames = change_points[1:]
+                cps = np.vstack((begin_frames, end_frames)).T
+                #print("cps: " + str(change_points))
+                #print("cps shape: " + str(change_points.shape) + "\n")
+
+                # Here, the change points are detected (Change-point positions t0, t1, ..., t_{m-1})
+                nfps = end_frames - begin_frames  # For each segment, calculate the number of frames
+                #print("nfps: " + str(n_frame_per_seg))   
+                #print("nfps shape: " + str(n_frame_per_seg.shape) + "\n")  
+
             # Convert predicted bounding boxes to summary
+            ####### SOSTITUIRE QUI CPS E NFPS
             pred_summ = vsumm_helper.bbox2summary(seq_len, pred_cls, pred_bboxes, cps, n_frames, nfps, picks)
             #print("pred summary: " + str(pred_summ[0:5])) # True, False list
             #print("pred summary shape: " + str(pred_summ.shape) + "\n")
@@ -98,6 +172,7 @@ def evaluate(model, val_loader, nms_thresh, device):
 
 def main():
     args = init_helper.get_arguments()
+    seg_algo = args.segment_algo
 
     init_helper.init_logger(args.model_dir, args.log_file)
     init_helper.set_random_seed(args.seed)
@@ -125,7 +200,7 @@ def main():
             val_loader = data_helper.DataLoader(val_set, shuffle=False) # Load data
 
             # Evaluate the split test keys
-            fscore, diversity = evaluate(model, val_loader, args.nms_thresh, args.device)
+            fscore, diversity = evaluate(model, seg_algo, val_loader, args.nms_thresh, args.device)
             stats.update(fscore=fscore, diversity=diversity)
 
             logger.info(f'{split_path.stem} split {split_idx}: diversity: '
