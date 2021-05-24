@@ -1,6 +1,6 @@
 import numpy as np
 
-from kts.cpd_nonlin import cpd_nonlin
+from segmentation.kts.cpd_nonlin import cpd_nonlin
 
 
 def cpd_auto(K, ncp, vmax, desc_rate=1, **kwargs):

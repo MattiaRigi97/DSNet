@@ -1,18 +1,7 @@
-import torch
-from torch import optim, nn
-from torchvision import models, transforms
 
-from helpers import init_helper, data_helper, vsumm_helper, bbox_helper
-from helpers.data_helper import open_video
-
-from modules.model_zoo import get_model
-
+from torch import  nn
 import numpy as np
-from matplotlib import cm
-
-from PIL import Image
-import imageio
-
+import cv2
 
 # Define a feature extractor
 class FeatureExtractor(nn.Module):
@@ -26,6 +15,30 @@ class FeatureExtractor(nn.Module):
     out = self.pooling(x)
     return out 
 
+# Function for generating the BGR hist of the selected frames
+def generate_bgr_hist(frames, num_bins):
+    print ("\t Generating linear Histrograms using OpenCV")
+    channels=['b','g','r']
+    hist=[]
+    for frame in frames:
+        feature_value = [cv2.calcHist([frame],[i],None,[num_bins],[0,256]) for i,col in enumerate(channels)]
+        feature_value = np.asarray(feature_value).flatten()
+        hist.append(feature_value)
+    hist = np.asarray(hist)
+    hist = (hist - hist.min()) / (hist.max() - hist.min())
+    print ("\t Done generating!")
+    print ("\t Shape of histogram: " + str(hist.shape))
+    print ("\n")
+    return hist
+
+#from matplotlib import cm
+#from PIL import Image
+#import imageio
+#from torchvision import models, transforms
+#from helpers import init_helper, data_helper, vsumm_helper, bbox_helper
+#from helpers.data_helper import open_video
+#from modules.model_zoo import get_model
+#from torch import optim, nn
 
 # Initialize the model
 # model = models.googlenet(pretrained=True)

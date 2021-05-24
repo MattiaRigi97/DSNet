@@ -155,5 +155,5 @@ def write_video_from_frame(output_path, video_name, model_name, summ_frames, pri
 	out.release()
 	if printing:
 		print("\t Video summary of " + str(video_name[:-4]) + " saved \n")
-		print("\t " + "..\\" + filename)
+		print("\t " + filename)
 	return None

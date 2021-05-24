@@ -1,59 +1,68 @@
 
 ## PRE-TRAINED MODELS
-# python inference.py anchor-free --model-dir ../models/pretrain_af_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --nms-thresh 0.4 --video_name Fire_Domino.mp4
-# python inference.py anchor-based --model-dir ../models/pretrain_ab_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --nms-thresh 0.4 --video_name Fire_Domino.mp4
+# python inference.py anchor-free --model-dir ../models/pretrain_af_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --segment_algo kts --nms-thresh 0.4 --video_name Fire_Domino.mp4
+# python inference.py anchor-based --model-dir ../models/pretrain_ab_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --segment_algo kts --nms-thresh 0.4 --video_name Fire_Domino.mp4
 
 ## CUSTOM MODELS
 # python inference.py anchor-based --model-dir ../models/ab_tvsum_aug/ --splits ../splits/tvsum_aug.yml --video_name Fire_Domino.mp4
 
+## PACKAGE
+import cv2
 import logging
-from pathlib import Path
-
 import numpy as np
+from PIL import Image
+from pathlib import Path
 from matplotlib import cm
 
+## SEGMENTATION METHODS
+# Segment Detection based on Optimal Grouping
+from segmentation.optimal_group.h_add import get_optimal_sequence_add
+from segmentation.optimal_group.h_nrm import get_optimal_sequence_nrm
+from segmentation.optimal_group.estimate_scenes_count import estimate_scenes_count
+from dictances import bhattacharyya as bt
+# Segment Detection based on KTS
+from segmentation.kts.cpd_auto import cpd_auto
+# Segment Detection with PySceneDetect
+from segmentation.pyscenedetecor import find_scenes
+from segmentation.pyscenedetecor import mean_pixel_intensity_calc
+
+# Helpers functions
 from helpers import init_helper, data_helper, vsumm_helper, bbox_helper
 from helpers.data_helper import open_video
 from helpers.data_helper import write_video_from_frame
 from helpers.data_helper import scale
-
 from modules.model_zoo import get_model
-from kts.cpd_auto import cpd_auto
 
+# Features Extraction functions
+from feature_extraction import generate_bgr_hist
+from feature_extraction import FeatureExtractor
+
+# Torch Modules
 import torch
 from torch import optim, nn
 from torchvision import models, transforms
 
-import cv2
-from PIL import Image
-import imageio
-
-from feature_extraction import FeatureExtractor
 
 logger = logging.getLogger()
 
-def inference(model, feat_extr, frames, n_frame_video, preprocess, nms_thresh, device):
+def inference(model, feat_extr, video_path, frames, n_frame_video, seg_algo, preprocess, nms_thresh, device):
     
     model.eval()
 
     with torch.no_grad():
 
         # Extract LeNet Features for all the frames
-        #seq = np.asarray([])
         seq = []
         for frame in frames:
             im = Image.fromarray(frame)
             input_tensor = preprocess(im)
             input_batch = input_tensor.unsqueeze(0) # create a mini-batch as expected by the model
-
             # move the input and model to GPU for speed if available
             if torch.cuda.is_available():
                 input_batch = input_batch.to('cuda')
                 model.to('cuda')
-
             with torch.no_grad():
                 output = feat_extr(input_batch)
-            #seq.append(np.asarray(output[0].cpu(), dtype=np.float32))
             seq = np.append(seq, output[0].cpu())
 
         # From 1D Array to 2D array (each of 1024 elements)
@@ -62,7 +71,6 @@ def inference(model, feat_extr, frames, n_frame_video, preprocess, nms_thresh, d
         seq = np.reshape(seq, (-1,1024))
         seq = np.asarray(seq, dtype=np.float32)
         seq_len = len(seq)
-        
         # print("seq: " + str(seq)) 
         # print("seq shape: " + str(seq.shape)+ "\n")
         ## print(type(seq))
@@ -91,26 +99,59 @@ def inference(model, feat_extr, frames, n_frame_video, preprocess, nms_thresh, d
         # print("pred_boxes: " + str(pred_bboxes[30:50]))
         # print("pred_boxes shape: " + str(pred_bboxes.shape) + "\n")
 
-        # Apply KTS
         #n_frames = seq_len * 15 - 1 
         # print("N_Video Frame: " + str(n_frame_video) + "\n")
         picks = np.arange(0, seq_len) * 15 # array([    0,    15,    30,    45,    60, ...])
         # print("picks: " + str(picks))
         # print("picks shape: " + str(picks.shape) + "\n")
 
-        kernel = np.matmul(seq, seq.T) # Matrix product of two arrays
-        kernel = scale(kernel, 0, 1)
-        # print("*************\n" + str(kernel))
-        # print("*************\n" + str(kernel.shape))
-        # print("SEQ LEN: " + str(seq_len))
-        change_points, _ = cpd_auto(K = kernel, ncp = seq_len-1, vmax = 1 ) # Call of the KTS Function
-        # print("cps: " + str(change_points))
-        change_points *= 15
-        # print("cps: " + str(change_points))
+        # VIDEO SEGMENTATION
+
+        if seg_algo == "kts":
+            # Apply KTS
+            kernel = np.matmul(seq, seq.T) # Matrix product of two arrays
+            kernel = scale(kernel, 0, 1)
+            # print("*************\n" + str(kernel))
+            # print("*************\n" + str(kernel.shape))
+            # print("SEQ LEN: " + str(seq_len))
+            change_points, _ = cpd_auto(K = kernel, ncp = seq_len-1, vmax = 1 ) # Call of the KTS Function
+            change_points *= 15
+            # print("cps: " + str(change_points))
+            # print("cps: " + str(change_points))
+        
+        if seg_algo == "osg" or seg_algo == "osg_sem":
+            if seg_algo == "osg":
+                # Extract color histogram from each frame
+                features = generate_bgr_hist(frames, num_bins = 16)
+                # Calculate the distance matrix
+            else:
+                features = seq
+            dist_mat = np.zeros(shape=(len(features),len(features)))
+            for i in range(0,len(features)):
+                for j in range(0,len(features)):
+                    di = dict(enumerate(features[i], 1))
+                    dj = dict(enumerate(features[j], 1))
+                    dist_mat[i,j] = bt(di,dj)
+            # Normalize the distance matrix
+            dist_mat = (dist_mat - dist_mat.min()) / (dist_mat.max() - dist_mat.min())
+            # Estimate the number of scenes/segments
+            K = estimate_scenes_count(dist_mat)
+            # Find the change points
+            change_points = get_optimal_sequence_add(dist_mat, K)
+            change_points *= 15
+
+        if seg_algo == "pyths":
+            all_mean_value = mean_pixel_intensity_calc(video_path)
+            print("MEAN: " + str(all_mean_value))
+            scenes = find_scenes(video_path, th = all_mean_value, min_scene_length = 60, min_perc = 0.8)
+            # Select all the split
+            change_points = []
+            for scene in scenes:
+                change_points.append(int(scene[1]))
+
         change_points = np.hstack((0, change_points, n_frame_video))
         begin_frames = change_points[:-1]
         end_frames = change_points[1:]
-        
         change_points = np.vstack((begin_frames, end_frames - 1)).T
         print("cps: " + str(change_points))
         print("cps shape: " + str(change_points.shape) + "\n")
@@ -131,7 +172,7 @@ def inference(model, feat_extr, frames, n_frame_video, preprocess, nms_thresh, d
 
 def main():
 
-    # sample execution (requires torchvision)
+    # Image pre-processing for LeNet
     preprocess = transforms.Compose([
         transforms.Resize(256),
         transforms.CenterCrop(224),
@@ -168,6 +209,8 @@ def main():
     video_path = args.video_path
     video_name = args.video_name
     output_video_path = args.output_path
+    # Define the segmentation algorithm
+    seg_algo = args.segment_algo
 
     # Load video
     video, frames, frames_sel, n_frame_video = open_video(video_name, video_path, sampling_interval=15)
@@ -187,7 +230,7 @@ def main():
     feat_extr = feat_extr.to(device)
 
     # Run inference
-    pred_summ = inference(model, feat_extr, frames_sel, n_frame_video, preprocess, args.nms_thresh, args.device)
+    pred_summ = inference(model, feat_extr, video_path, frames_sel, n_frame_video, seg_algo, preprocess, args.nms_thresh, args.device)
     
     # Trasform and save in .mp4 file 
     pred_summ = np.array(pred_summ) # True False Mask

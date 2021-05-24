@@ -80,7 +80,16 @@ def get_parser() -> argparse.ArgumentParser:
     # inference
     parser.add_argument('--video_path', type=str, default="../video")
     parser.add_argument('--video_name', type=str, default="_xMr-HKMfVA.mp4")
-    parser.add_argument('--output_path', type=str, default="../output_video")
+    parser.add_argument('--output_path', type=str, default=r"C:\Users\matti\github\DSNet\output_video")
+    parser.add_argument('--segment_algo', type=str, default='kts',
+                        choices=['kts', 'osg', 'osg_sem', 'pyths', 'pycont','us'])
+        # kts - Kernel Temporal Segmentation
+        # osg - Optimal Sequential Grouping
+        # osg_sem - Optimal Sequential Grouping with CNN features
+        # pyths - PySceneDetector, ThresholdDetector
+        # pycont - PySceneDetector, ContentDetector
+        # us - Uniform Sampling
+
     
     return parser
 
