@@ -50,6 +50,9 @@ def mean_pixel_intensity_calc(video_path):
             break
         avg_list.append(avg)
     
-    all_mean_value = int(sum(avg_list)/len(avg_list))
+    if len(avg_list) != 0:
+        all_mean_value = int(sum(avg_list)/len(avg_list))
+    else:
+        all_mean_value = 100
         
     return all_mean_value
