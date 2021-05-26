@@ -115,7 +115,7 @@ def inference(model, feat_extr, filename, frames, n_frame_video, seg_algo, prepr
             # print("*************\n" + str(kernel))
             # print("*************\n" + str(kernel.shape))
             # print("SEQ LEN: " + str(seq_len))
-            change_points, _ = cpd_auto(K = kernel, ncp = seq_len-1, vmax = 1 ) # Call of the KTS Function
+            change_points, _ = cpd_auto(K = kernel, ncp = seq_len - 1, vmax = 1 ) # Call of the KTS Function
             change_points *= 15
             change_points = np.hstack((0, change_points, n_frame_video)) # add 0 and the last frame
             # print("cps: " + str(change_points))

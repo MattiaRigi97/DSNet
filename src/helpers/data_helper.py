@@ -25,9 +25,15 @@ class VideoDataset(object):
         ##print(video_file)
 
         # Load all data
+        filename = video_file['filename'][...][()].decode("utf-8")
         seq = video_file['features'][...].astype(np.float32)
         gtscore = video_file['gtscore'][...].astype(np.float32)
-        cps = video_file['change_points'][...].astype(np.int32)
+
+        cps_kts = video_file['change_points'][...].astype(np.int32)
+        cps_osg = video_file['change_points_osg'][...].astype(np.int32)
+        cps_osg_sem = video_file['change_points_osg_sem'][...].astype(np.int32)
+        cps_pyths = video_file['change_points_pyths'][...].astype(np.int32)
+
         n_frames = video_file['n_frames'][...].astype(np.int32)
         nfps = video_file['n_frame_per_seg'][...].astype(np.int32)
         picks = video_file['picks'][...].astype(np.int32)
@@ -38,7 +44,8 @@ class VideoDataset(object):
         gtscore -= gtscore.min()
         gtscore /= gtscore.max()
 
-        return key, seq, gtscore, cps, n_frames, nfps, picks, user_summary
+        return filename, key, seq, gtscore, cps_kts, cps_osg, cps_osg_sem, cps_pyths, \
+        n_frames, nfps, picks, user_summary
 
     def __len__(self):
         return len(self.keys)

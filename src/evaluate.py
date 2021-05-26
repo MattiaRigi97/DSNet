@@ -41,7 +41,8 @@ def evaluate(model, seg_algo, val_loader, nms_thresh, device):
 
     with torch.no_grad():
         # For each video
-        for test_key, seq, _, cps, n_frames, nfps, picks, user_summary in val_loader:
+        #for test_key, seq, _, cps, n_frames, nfps, picks, user_summary in val_loader:
+        for filename, test_key, seq, _, cps, n_frames, nfps, picks, user_summary, all_mean_intensity, rgb_hist, rgb_dist_mat in val_loader:
             #print("MIN: "+str(seq.min()))
             #print("MAX: "+str(seq.max()))
             #print("INPUT")
@@ -96,29 +97,30 @@ def evaluate(model, seg_algo, val_loader, nms_thresh, device):
                 if seg_algo == "osg" or seg_algo == "osg_sem":
                     if seg_algo == "osg":
                         # Extract color histogram from each frame
-                        features = generate_bgr_hist(frames, num_bins = 16)
+                        features = rgb_hist
                         # Calculate the distance matrix
+                        dist_mat = rgb_dist_mat
                     else:
                         features = seq
-                    dist_mat = np.zeros(shape=(len(features),len(features)))
-                    for i in range(0,len(features)):
-                        for j in range(0,len(features)):
-                            di = dict(enumerate(features[i], 1))
-                            dj = dict(enumerate(features[j], 1))
-                            dist_mat[i,j] = bt(di,dj)
-                    # Normalize the distance matrix
-                    dist_mat = (dist_mat - dist_mat.min()) / (dist_mat.max() - dist_mat.min())
+                        dist_mat = np.zeros(shape=(len(features),len(features)))
+                        for i in range(0,len(features)):
+                            for j in range(0,len(features)):
+                                di = dict(enumerate(features[i], 1))
+                                dj = dict(enumerate(features[j], 1))
+                                dist_mat[i,j] = bt(di,dj)
+                        # Normalize the distance matrix
+                        dist_mat = (dist_mat - dist_mat.min()) / (dist_mat.max() - dist_mat.min())
                     # Estimate the number of scenes/segments
+                    print(dist_mat.shape)
                     K = estimate_scenes_count(dist_mat)
+                    print(K)
                     # Find the change points
                     change_points = get_optimal_sequence_add(dist_mat, K)
                     change_points *= 15
                     change_points = np.hstack((0, change_points, n_frames)) # add 0 and the last frame
 
                 if seg_algo == "pyths":
-                    all_mean_value = mean_pixel_intensity_calc(filename)
-                    print("MEAN: " + str(all_mean_value))
-                    scenes = find_scenes(filename, th = all_mean_value, min_scene_length = 30, min_perc = 0.8)
+                    scenes = find_scenes(filename, th = all_mean_intensity, min_scene_length = 60, min_perc = 0.8)
                     # Select all the split
                     change_points = []
                     for scene in scenes:
@@ -146,7 +148,6 @@ def evaluate(model, seg_algo, val_loader, nms_thresh, device):
                 #print("nfps shape: " + str(n_frame_per_seg.shape) + "\n")  
 
             # Convert predicted bounding boxes to summary
-            ####### SOSTITUIRE QUI CPS E NFPS
             pred_summ = vsumm_helper.bbox2summary(seq_len, pred_cls, pred_bboxes, cps, n_frames, nfps, picks)
             #print("pred summary: " + str(pred_summ[0:5])) # True, False list
             #print("pred summary shape: " + str(pred_summ.shape) + "\n")
