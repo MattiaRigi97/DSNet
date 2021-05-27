@@ -31,9 +31,9 @@ print(video_names)
 
 f = h5py.File(filename, 'r+')
 video_path = r"C:\Users\matti\OneDrive - Universita degli Studi di Milano-Bicocca\Uni\LM-DataScience\Tesi+Stage\Dataset\TVSum\ydata-tvsum50-v1_1\ydata-tvsum50-v1_1\video"
-
+num = 0
 for name in video_names:
-    
+    num += 1
     #Save the filename
     video_name = name[1] + str(".mp4")
     filename = video_path + "\\" + str(video_name)
@@ -41,7 +41,7 @@ for name in video_names:
     
     ### CPS FOR OSG
     # Create the histogram of colors
-    video, frames, frames_sel, n_frame_video = open_video(video_name, video_path, sampling_interval=15)
+    video, frames, frames_sel, n_frame_video = open_video(video_name, video_path, sampling_interval = 60)
     hist = generate_bgr_hist(frames_sel, num_bins = 16)
     f.create_dataset(name[0] + '/rgb_hist', data=hist)
     # Compute the distance matrix
@@ -55,13 +55,14 @@ for name in video_names:
     f.create_dataset(name[0] + '/rgb_dist_mat', data=dist_mat)
     # Find the change points
     K = estimate_scenes_count(dist_mat)
+    print("*** " + str(K))
     change_points = get_optimal_sequence_add(dist_mat, K)
     change_points *= 15
     change_points = np.hstack((0, change_points, n_frame_video)) # add 0 and the last frame
     f.create_dataset(name[0] + '/change_points_osg', data = change_points)
     
     ### CPS FOR OSG_SEM
-    seq = np.asarray(f[name[0]]["features"])
+    seq = np.asarray(f[name[0]]["features"][::4])
     # Compute the distance matrix between CNN features
     dist_mat = np.zeros(shape=(len(seq),len(seq)))
     for i in range(0,len(seq)):
@@ -73,6 +74,7 @@ for name in video_names:
     f.create_dataset(name[0] + '/seq_dist_mat', data = dist_mat)
     # Find the change points
     K = estimate_scenes_count(dist_mat)
+    print("*** " + str(K))
     change_points = get_optimal_sequence_add(dist_mat, K)
     change_points *= 15
     change_points = np.hstack((0, change_points, n_frame_video)) # add 0 and the last frame
@@ -88,6 +90,6 @@ for name in video_names:
     change_points = np.hstack((0, change_points)) # append 0 from the change point list
     f.create_dataset(name[0] + '/change_points_pyths', data = change_points)
 
-    print("**** Video Processed ****")
+    print("**** " + str(num) + " Video Processed ****")
 
 f.close()

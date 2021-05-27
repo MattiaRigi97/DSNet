@@ -1,7 +1,8 @@
 import h5py
+import numpy as np
 
-filename = r'C:\Users\matti\github\DSNet\datasets\eccv16_dataset_summe_google_pool5.h5'
-#filename = r'C:\Users\matti\github\DSNet\datasets\eccv16_dataset_tvsum_google_pool5.h5'
+#filename = r'C:\Users\matti\github\DSNet\datasets\eccv16_dataset_summe_google_pool5.h5'
+filename = r'C:\Users\matti\github\DSNet\datasets\eccv16_dataset_tvsum_google_pool5.h5'
 
 
 def scan_hdf5(path, recursive=True, tab_step=2):
@@ -32,5 +33,7 @@ with h5py.File(filename, "r") as f:
 	print(variables)
 	print("\n")
 
-    #print(f["video_9"]["video_name"][()].decode("utf-8"))
-    #print(np.asarray(f["video_9"]["change_points"])
+	#print(f["video_9"]["video_name"][()].decode("utf-8"))
+	print(np.asarray(f["video_1"]["features"]))
+	print(f["video_1"]["features"].shape)
+	print(f["video_1"]["n_frames"])

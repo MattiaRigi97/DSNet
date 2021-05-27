@@ -1,10 +1,10 @@
 
 ## PRE-TRAINED MODELS
-# python evaluate.py anchor-free --model-dir ../models/pretrain_af_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --nms-thresh 0.4 --segment_algo kts
-# python evaluate.py anchor-based --model-dir ../models/pretrain_ab_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --segment_algo us
+# python evaluate2.py anchor-free --model-dir ../models/pretrain_af_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --nms-thresh 0.4 --segment_algo kts
+# python evaluate2.py anchor-based --model-dir ../models/pretrain_ab_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --segment_algo us
 
 ## CUSTOM MODELS
-# python evaluate.py anchor-based --model-dir ../models/ab_tvsum_aug/ --splits ../splits/tvsum_aug.yml --segment_algo us
+# python evaluate2.py anchor-based --model-dir ../models/ab_tvsum_aug/ --splits ../splits/tvsum_aug.yml --segment_algo us
 
 import logging
 from pathlib import Path
@@ -27,7 +27,7 @@ def evaluate(model, seg_algo, val_loader, nms_thresh, device):
     with torch.no_grad():
         # For each video
         for _, test_key, seq, _, change_points_kts, change_points_osg, \
-            change_points_osg_sem, change_points_pyths, n_frames, _, picks, user_summary in val_loader:
+            change_points_osg_sem, change_points_pyths, n_frames, nfps_kts, picks, user_summary in val_loader:
            
             # Model prediction
             seq_torch = torch.from_numpy(seq).unsqueeze(0).to(device)
@@ -44,32 +44,34 @@ def evaluate(model, seg_algo, val_loader, nms_thresh, device):
             # VIDEO SEGMENTATION
 
             if seg_algo == "kts":
-                change_points = change_points_kts
+                cps = change_points_kts
+                nfps = nfps_kts
 
-            if seg_algo == "osg":
-                change_points = change_points_osg
+            else:
+
+                if seg_algo == "osg":
+                    change_points = change_points_osg
                 
-            if seg_algo == "osg_sem":
-                change_points = change_points_osg_sem
+                if seg_algo == "osg_sem":
+                    change_points = change_points_osg_sem
 
-            if seg_algo == "pyths":
-                change_points = change_points_pyths
+                if seg_algo == "pyths":
+                    change_points = change_points_pyths
 
-            if seg_algo == "us":
-                interval = int(n_frames / 20)
-                change_points = np.arange(1, n_frames, interval)
-                change_points = np.hstack((0, change_points, n_frames))
+                if seg_algo == "us":
+                    interval = int(n_frames / 20)
+                    change_points = np.arange(1, n_frames, interval)
+                    change_points = np.hstack((0, change_points, n_frames))
 
-            if seg_algo == "random":
-                change_points = np.sort(random.sample(range(1, n_frames - 1), 20))
-                change_points = np.hstack((0, change_points, n_frames))
+                if seg_algo == "random":
+                    change_points = np.sort(random.sample(range(1, n_frames - 1), 20))
+                    change_points = np.hstack((0, change_points, n_frames))
 
-            begin_frames = change_points[:-1]
-            end_frames = change_points[1:]
-            cps = np.vstack((begin_frames, end_frames)).T
-
-            # Here, the change points are detected (Change-point positions t0, t1, ..., t_{m-1})
-            nfps = end_frames - begin_frames  # For each segment, calculate the number of frames
+                begin_frames = change_points[:-1]
+                end_frames = change_points[1:]
+                cps = np.vstack((begin_frames, end_frames)).T
+                # Here, the change points are detected (Change-point positions t0, t1, ..., t_{m-1})
+                nfps = end_frames - begin_frames  # For each segment, calculate the number of frames
 
             # Convert predicted bounding boxes to summary
             pred_summ = vsumm_helper.bbox2summary(seq_len, pred_cls, pred_bboxes, cps, n_frames, nfps, picks)
