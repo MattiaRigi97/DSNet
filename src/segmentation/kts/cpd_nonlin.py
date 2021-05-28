@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def calc_scatters(K):
     """Calculate scatter matrix: scatters[i,j] = {scatter of the sequence with
     starting frame i and ending frame j}
@@ -26,7 +25,7 @@ def calc_scatters(K):
     return scatters
 
 
-def cpd_nonlin(K, ncp, lmin=1, lmax=100000, backtrack=True, verbose=False,
+def cpd_nonlin(K, ncp, lmin=1, lmax=100000, backtrack=True, verbose=True,
                out_scatters=None):
     """Change point detection with dynamic programming
     :param K: Square kernel matrix

@@ -1,8 +1,8 @@
 import h5py
 import numpy as np
 
-#filename = r'C:\Users\matti\github\DSNet\datasets\eccv16_dataset_summe_google_pool5.h5'
-filename = r'C:\Users\matti\github\DSNet\datasets\eccv16_dataset_tvsum_google_pool5.h5'
+filename = r'C:\Users\matti\github\DSNet\datasets\eccv16_dataset_summe_google_pool5.h5'
+#filename = r'C:\Users\matti\github\DSNet\datasets\eccv16_dataset_tvsum_google_pool5.h5'
 
 
 def scan_hdf5(path, recursive=True, tab_step=2):
@@ -34,6 +34,22 @@ with h5py.File(filename, "r") as f:
 	print("\n")
 
 	#print(f["video_9"]["video_name"][()].decode("utf-8"))
-	print(np.asarray(f["video_1"]["features"]))
-	print(f["video_1"]["features"].shape)
-	print(f["video_1"]["n_frames"])
+	a = np.asarray(f["video_11"]["features"])
+	print(a.min())
+	print(a.max())
+	print(a.mean())
+	print(np.asarray(f["video_11"]["features"]))
+	print(np.asarray(f["video_11"]["picks"]))
+	print(f["video_11"]["features"].shape)
+	#print(f["video_1"]["n_frames"])
+
+# RETRIEVE THE video_i | video_name relationship for SUMME Dataset
+filename = r'C:\Users\matti\github\DSNet\datasets\eccv16_dataset_summe_google_pool5.h5'
+with h5py.File(filename, "r") as f:
+    video_names = []
+    for i in range(1, len(f) + 1):
+        video_name = str("video_") + str(i)
+        video_names.append([video_name, f[video_name]["video_name"][()].decode("utf-8")])
+
+# video_names[i] = name = [video_1, "Air_Force_One"]
+print(video_names)

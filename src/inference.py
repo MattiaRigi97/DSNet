@@ -65,12 +65,19 @@ def inference(model, feat_extr, filename, frames, n_frame_video, seg_algo, prepr
             with torch.no_grad():
                 output = feat_extr(input_batch)
             seq = np.append(seq, output[0].cpu())
-
-        # From 1D Array to 2D array (each of 1024 elements)
+        
+         # From 1D Array to 2D array (each of 1024 elements)
         # print("MIN: "+str(seq.min()))
         # print("MAX: "+str(seq.max()))
-        seq = np.reshape(seq, (-1,1024))
-        seq = np.asarray(seq, dtype=np.float32)
+        #seq = np.reshape(seq, (-1,1024))
+        #seq = np.asarray(seq, dtype=np.float32)
+
+        print(seq)
+        print(seq.min())
+        print(seq.max())
+        print(seq.mean())
+        print(seq.shape)
+
         seq_len = len(seq)
         # print("seq: " + str(seq)) 
         # print("seq shape: " + str(seq.shape)+ "\n")
@@ -229,7 +236,7 @@ def main():
     video, frames, frames_sel, n_frame_video = open_video(video_name, video_path, sampling_interval=15)
 
     # Initialize the model
-    lenet = models.googlenet(pretrained=True)
+    lenet = models.googlenet(pretrained=True, transform_input = True)
     # print(model(torch.randn(1,3,224,224)).shape)
     # print(model)
 

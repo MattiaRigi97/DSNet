@@ -15,21 +15,6 @@ import torch
 from helpers import init_helper, data_helper, vsumm_helper, bbox_helper
 from modules.model_zoo import get_model
 
-## SEGMENTATION METHODS
-# Segment Detection based on Optimal Grouping
-from segmentation.optimal_group.h_add import get_optimal_sequence_add
-from segmentation.optimal_group.h_nrm import get_optimal_sequence_nrm
-from segmentation.optimal_group.estimate_scenes_count import estimate_scenes_count
-from dictances import bhattacharyya as bt
-# Segment Detection based on KTS
-from segmentation.kts.cpd_auto import cpd_auto
-# Segment Detection with PySceneDetect
-from segmentation.pyscenedetecor import find_scenes
-from segmentation.pyscenedetecor import mean_pixel_intensity_calc
-
-# Features Extraction functions
-from feature_extraction import generate_bgr_hist
-
 import random
 
 logger = logging.getLogger()
@@ -41,8 +26,9 @@ def evaluate(model, seg_algo, val_loader, nms_thresh, device):
 
     with torch.no_grad():
         # For each video
-        #for test_key, seq, _, cps, n_frames, nfps, picks, user_summary in val_loader:
-        for filename, test_key, seq, _, cps, n_frames, nfps, picks, user_summary, all_mean_intensity, rgb_hist, rgb_dist_mat in val_loader:
+        for _, test_key, seq, _, change_points_kts, change_points_osg, \
+            change_points_osg_sem, change_points_pyths, n_frames, nfps_kts, picks, user_summary in val_loader:
+           
             #print("MIN: "+str(seq.min()))
             #print("MAX: "+str(seq.max()))
             #print("INPUT")
@@ -89,43 +75,23 @@ def evaluate(model, seg_algo, val_loader, nms_thresh, device):
             #print("\nApply NMS")
             #print("pred_cls shape: " + str(pred_cls.shape))
             #print("pred_boxes shape: " + str(pred_bboxes.shape) + "\n")
-
+            
             # VIDEO SEGMENTATION
 
-            if seg_algo != "kts":
-                           
-                if seg_algo == "osg" or seg_algo == "osg_sem":
-                    if seg_algo == "osg":
-                        # Extract color histogram from each frame
-                        features = rgb_hist
-                        # Calculate the distance matrix
-                        dist_mat = rgb_dist_mat
-                    else:
-                        features = seq
-                        dist_mat = np.zeros(shape=(len(features),len(features)))
-                        for i in range(0,len(features)):
-                            for j in range(0,len(features)):
-                                di = dict(enumerate(features[i], 1))
-                                dj = dict(enumerate(features[j], 1))
-                                dist_mat[i,j] = bt(di,dj)
-                        # Normalize the distance matrix
-                        dist_mat = (dist_mat - dist_mat.min()) / (dist_mat.max() - dist_mat.min())
-                    # Estimate the number of scenes/segments
-                    print(dist_mat.shape)
-                    K = estimate_scenes_count(dist_mat)
-                    print(K)
-                    # Find the change points
-                    change_points = get_optimal_sequence_add(dist_mat, K)
-                    change_points *= 15
-                    change_points = np.hstack((0, change_points, n_frames)) # add 0 and the last frame
+            if seg_algo == "kts":
+                cps = change_points_kts
+                nfps = nfps_kts
+
+            else:
+
+                if seg_algo == "osg":
+                    change_points = change_points_osg
+                
+                if seg_algo == "osg_sem":
+                    change_points = change_points_osg_sem
 
                 if seg_algo == "pyths":
-                    scenes = find_scenes(filename, th = all_mean_intensity, min_scene_length = 60, min_perc = 0.8)
-                    # Select all the split
-                    change_points = []
-                    for scene in scenes:
-                        change_points.append(int(scene[1]))
-                    change_points = np.hstack((0, change_points)) # append 0 from the change point list
+                    change_points = change_points_pyths
 
                 if seg_algo == "us":
                     interval = int(n_frames / 20)
@@ -139,18 +105,11 @@ def evaluate(model, seg_algo, val_loader, nms_thresh, device):
                 begin_frames = change_points[:-1]
                 end_frames = change_points[1:]
                 cps = np.vstack((begin_frames, end_frames)).T
-                #print("cps: " + str(change_points))
-                #print("cps shape: " + str(change_points.shape) + "\n")
-
                 # Here, the change points are detected (Change-point positions t0, t1, ..., t_{m-1})
                 nfps = end_frames - begin_frames  # For each segment, calculate the number of frames
-                #print("nfps: " + str(n_frame_per_seg))   
-                #print("nfps shape: " + str(n_frame_per_seg.shape) + "\n")  
 
             # Convert predicted bounding boxes to summary
             pred_summ = vsumm_helper.bbox2summary(seq_len, pred_cls, pred_bboxes, cps, n_frames, nfps, picks)
-            #print("pred summary: " + str(pred_summ[0:5])) # True, False list
-            #print("pred summary shape: " + str(pred_summ.shape) + "\n")
 
             # Compute F-Measure
             eval_metric = 'avg' if 'tvsum' in test_key else 'max'
@@ -158,9 +117,6 @@ def evaluate(model, seg_algo, val_loader, nms_thresh, device):
 
             #Down-sample the summary by 15 times
             pred_summ = vsumm_helper.downsample_summ(pred_summ)
-            #print("pred summary: " + str(pred_summ[0:5]))
-            #print("pred summary shape: " + str(pred_summ.shape))
-            #print("\n\n")
 
             diversity = vsumm_helper.get_summ_diversity(pred_summ, seq)
             # For each video, update the measures
