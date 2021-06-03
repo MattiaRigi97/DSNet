@@ -1,3 +1,7 @@
+
+# python train.py anchor-based --model-dir ../models/ab_mobilenet --splits ../splits/tvsum.yml ../splits/summe.yml --max-epoch 50 --cnn mobilenet --base-model attention --num-feature 1280 --num-head 10
+# python train.py anchor-based --model-dir ../models/ab_mobilenet_lstm --splits ../splits/tvsum.yml ../splits/summe.yml --max-epoch 50 --cnn mobilenet --base-model lstm --num-feature 1280
+
 import logging
 
 import numpy as np
@@ -9,6 +13,7 @@ from anchor_based.dsnet import DSNet
 from anchor_based.losses import calc_cls_loss, calc_loc_loss
 from evaluate import evaluate
 from helpers import data_helper, vsumm_helper, bbox_helper
+from helpers import init_helper, data_helper, vsumm_helper, bbox_helper
 
 logger = logging.getLogger()
 
@@ -22,6 +27,7 @@ def xavier_init(module):
 
 
 def train(args, split, save_path):
+    print(args.num_feature)
     model = DSNet(base_model=args.base_model, num_feature=args.num_feature,
                   num_hidden=args.num_hidden, anchor_scales=args.anchor_scales,
                   num_head=args.num_head)
@@ -41,11 +47,45 @@ def train(args, split, save_path):
     val_set = data_helper.VideoDataset(split['test_keys'])
     val_loader = data_helper.DataLoader(val_set, shuffle=False)
 
+    cnn = args.cnn
+
     for epoch in range(args.max_epoch):
         model.train()
         stats = data_helper.AverageMeter('loss', 'cls_loss', 'loc_loss')
 
-        for _, seq, gtscore, cps, n_frames, nfps, picks, _ in train_loader:
+        #for _, seq, gtscore, cps, n_frames, nfps, picks, _ in train_loader:
+        for _, _, n_frames, picks, gtscore, _, _, \
+            seq_default, cps_default, nfps_default, \
+            seq_lenet, seq_alexnet, seq_mobilenet, seq_squeeze, seq_resnet, \
+            _, _, _, cps_lenet, cps_alexnet, cps_mobilenet, cps_squeeze, cps_resnet in train_loader:
+            
+            if cnn == "default":
+                seq = seq_default
+                cps = cps_default
+                nfps = nfps_default
+            else: 
+                if cnn == "lenet":
+                    seq = seq_lenet
+                    change_points = cps_lenet
+                if cnn == "alexnet":
+                    seq = seq_alexnet
+                    change_points = cps_alexnet
+                if cnn == "mobilenet":
+                    seq = seq_mobilenet
+                    change_points = cps_mobilenet
+                if cnn == "squeeze":
+                    seq = seq_squeeze
+                    change_points = cps_squeeze
+                if cnn == "resnet":
+                    seq = seq_resnet
+                    change_points = cps_resnet
+
+                begin_frames = change_points[:-1]
+                end_frames = change_points[1:]
+                cps = np.vstack((begin_frames, end_frames)).T
+                # Here, the change points are detected (Change-point positions t0, t1, ..., t_{m-1})
+                nfps = end_frames - begin_frames
+
             # Obtain a keyshot summary from gtscore (the 1D-array with shape (n_steps), 
             # stores ground truth improtance score (used for training)
             keyshot_summ = vsumm_helper.get_keyshot_summ(
@@ -103,7 +143,17 @@ def train(args, split, save_path):
                          loc_loss=loc_loss.item())
 
         # For each epoch, evaluate the model
-        val_fscore, _ = evaluate(model, val_loader, args.nms_thresh, args.device)
+        args = init_helper.get_arguments()
+        seg_algo = args.segment_algo
+        cnn = args.cnn
+
+        init_helper.init_logger(args.model_dir, args.log_file)
+        init_helper.set_random_seed(args.seed)
+
+        # logger.info(vars(args))
+
+        val_fscore, _ = evaluate(model, cnn, seg_algo, val_loader, args.nms_thresh, args.device)
+        # val_fscore, _ = evaluate(model, val_loader, args.nms_thresh, args.device)
 
         if max_val_fscore < val_fscore:
             max_val_fscore = val_fscore

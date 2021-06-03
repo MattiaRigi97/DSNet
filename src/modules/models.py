@@ -23,6 +23,7 @@ class ScaledDotProductAttention(nn.Module):
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, num_head=8, num_feature=1024):
+    #def __init__(self, num_head=10, num_feature=1280):
         super().__init__()
         self.num_head = num_head
 

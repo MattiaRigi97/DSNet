@@ -3,6 +3,7 @@ from torch import  nn
 import numpy as np
 import cv2
 
+"""
 # Define a feature extractor
 class FeatureExtractor(nn.Module):
   def __init__(self, model):
@@ -13,7 +14,7 @@ class FeatureExtractor(nn.Module):
   def forward(self, x):
 	# It will take the input 'x' until it returns the feature vector called 'out'
     out = self.pooling(x)
-    return out 
+    return out """
 
 # Function for generating the BGR hist of the selected frames
 def generate_bgr_hist(frames, num_bins):

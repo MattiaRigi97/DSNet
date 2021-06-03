@@ -26,26 +26,39 @@ class VideoDataset(object):
 
         # Load all data
         filename = video_file['filename'][...][()].decode("utf-8")
-        seq = video_file['features'][...].astype(np.float32)
-        gtscore = video_file['gtscore'][...].astype(np.float32)
-
-        cps_kts = video_file['change_points'][...].astype(np.int32)
-        cps_osg = video_file['change_points_osg'][...].astype(np.int32)
-        cps_osg_sem = video_file['change_points_osg_sem'][...].astype(np.int32)
-        cps_pyths = video_file['change_points_pyths'][...].astype(np.int32)
-
         n_frames = video_file['n_frames'][...].astype(np.int32)
-        nfps = video_file['n_frame_per_seg'][...].astype(np.int32)
         picks = video_file['picks'][...].astype(np.int32)
+        gtscore = video_file['gtscore'][...].astype(np.float32)
+        gtscore -= gtscore.min()
+        gtscore /= gtscore.max()
         user_summary = None
         if 'user_summary' in video_file:
             user_summary = video_file['user_summary'][...].astype(np.float32)
+        gtsummary = video_file['gtsummary'][...].astype(np.float32)
 
-        gtscore -= gtscore.min()
-        gtscore /= gtscore.max()
+        seq_lenet = video_file['seq_lenet'][...].astype(np.float32)
+        seq_alexnet = video_file['seq_alexnet'][...].astype(np.float32)
+        seq_mobilenet = video_file['seq_mobilenet'][...].astype(np.float32)
+        seq_squeeze = video_file['seq_squeeze'][...].astype(np.float32)
+        seq_resnet = video_file['seq_resnet'][...].astype(np.float32)
 
-        return filename, key, seq, gtscore, cps_kts, cps_osg, cps_osg_sem, cps_pyths, \
-        n_frames, nfps, picks, user_summary
+        cps_osg = video_file['change_points_osg'][...].astype(np.int32)
+        cps_osg_sem = video_file['change_points_osg_sem'][...].astype(np.int32)
+        cps_pyths = video_file['change_points_pyths'][...].astype(np.int32)
+        cps_lenet = video_file['cps_lenet'][...].astype(np.int32)
+        cps_alexnet = video_file['cps_alexnet'][...].astype(np.int32)
+        cps_mobilenet = video_file['cps_mobilenet'][...].astype(np.int32)
+        cps_squeeze = video_file['cps_squeeze'][...].astype(np.int32)
+        cps_resnet = video_file['cps_resnet'][...].astype(np.int32)
+
+        cps_default = video_file['change_points'][...].astype(np.int32)
+        seq_default = video_file['features'][...].astype(np.float32)
+        nfps_default = video_file['n_frame_per_seg'][...].astype(np.int32)
+        
+        return filename, key, n_frames, picks, gtscore, user_summary, gtsummary, \
+                seq_default, cps_default, nfps_default, \
+                seq_lenet, seq_alexnet, seq_mobilenet, seq_squeeze, seq_resnet, \
+                cps_osg, cps_osg_sem, cps_pyths, cps_lenet, cps_alexnet, cps_mobilenet, cps_squeeze, cps_resnet
 
     def __len__(self):
         return len(self.keys)

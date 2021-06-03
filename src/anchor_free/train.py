@@ -1,12 +1,19 @@
+
+# python train.py anchor-free --model-dir ../models/af_mobilenet --splits ../splits/tvsum.yml ../splits/summe.yml --max-epoch 50 --cnn mobilenet --base-model attention --num-feature 1280 --num-head 10 --nms-thresh 0.4 
+
+
 import logging
 
 import torch
+import numpy as np
 
 from anchor_free import anchor_free_helper
 from anchor_free.dsnet_af import DSNetAF
 from anchor_free.losses import calc_ctr_loss, calc_cls_loss, calc_loc_loss
 from evaluate import evaluate
 from helpers import data_helper, vsumm_helper
+from helpers import init_helper, data_helper, vsumm_helper, bbox_helper
+
 
 logger = logging.getLogger()
 
@@ -30,14 +37,48 @@ def train(args, split, save_path):
     val_set = data_helper.VideoDataset(split['test_keys'])
     val_loader = data_helper.DataLoader(val_set, shuffle=False)
 
+    cnn = args.cnn
+
     for epoch in range(args.max_epoch):
         model.train()
         stats = data_helper.AverageMeter('loss', 'cls_loss', 'loc_loss',
                                          'ctr_loss')
 
-        for _, seq, gtscore, change_points, n_frames, nfps, picks, _ in train_loader:
+        #for _, seq, gtscore, change_points, n_frames, nfps, picks, _ in train_loader:
+        for _, _, n_frames, picks, gtscore, _, _, \
+            seq_default, cps_default, nfps_default, \
+            seq_lenet, seq_alexnet, seq_mobilenet, seq_squeeze, seq_resnet, \
+            _, _, _, cps_lenet, cps_alexnet, cps_mobilenet, cps_squeeze, cps_resnet in train_loader:
+            
+            if cnn == "default":
+                seq = seq_default
+                cps = cps_default
+                nfps = nfps_default
+            else: 
+                if cnn == "lenet":
+                    seq = seq_lenet
+                    change_points = cps_lenet
+                if cnn == "alexnet":
+                    seq = seq_alexnet
+                    change_points = cps_alexnet
+                if cnn == "mobilenet":
+                    seq = seq_mobilenet
+                    change_points = cps_mobilenet
+                if cnn == "squeeze":
+                    seq = seq_squeeze
+                    change_points = cps_squeeze
+                if cnn == "resnet":
+                    seq = seq_resnet
+                    change_points = cps_resnet
+
+                begin_frames = change_points[:-1]
+                end_frames = change_points[1:]
+                cps = np.vstack((begin_frames, end_frames)).T
+                # Here, the change points are detected (Change-point positions t0, t1, ..., t_{m-1})
+                nfps = end_frames - begin_frames
+    
             keyshot_summ = vsumm_helper.get_keyshot_summ(
-                gtscore, change_points, n_frames, nfps, picks)
+                gtscore, cps, n_frames, nfps, picks)
             target = vsumm_helper.downsample_summ(keyshot_summ)
 
             if not target.any():
@@ -69,7 +110,18 @@ def train(args, split, save_path):
             stats.update(loss=loss.item(), cls_loss=cls_loss.item(),
                          loc_loss=loc_loss.item(), ctr_loss=ctr_loss.item())
 
-        val_fscore, _ = evaluate(model, val_loader, args.nms_thresh, args.device)
+        # For each epoch, evaluate the model
+        args = init_helper.get_arguments()
+        seg_algo = args.segment_algo
+        cnn = args.cnn
+
+        init_helper.init_logger(args.model_dir, args.log_file)
+        init_helper.set_random_seed(args.seed)
+
+        # logger.info(vars(args))
+
+        val_fscore, _ = evaluate(model, cnn, seg_algo, val_loader, args.nms_thresh, args.device)
+        # val_fscore, _ = evaluate(model, val_loader, args.nms_thresh, args.device)
 
         if max_val_fscore < val_fscore:
             max_val_fscore = val_fscore

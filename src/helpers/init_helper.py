@@ -90,7 +90,8 @@ def get_parser() -> argparse.ArgumentParser:
         # pycont - PySceneDetector, ContentDetector
         # random - Random select change points
         # us - Uniform Sampling
-
+    parser.add_argument('--cnn', type=str, default='default',
+                    choices=['default','lenet', 'alexnet', 'mobilenet', 'squeeze', 'resnet'])
     
     return parser
 
