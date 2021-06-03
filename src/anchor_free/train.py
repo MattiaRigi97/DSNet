@@ -1,6 +1,12 @@
 
 # python train.py anchor-free --model-dir ../models/af_mobilenet --splits ../splits/tvsum.yml ../splits/summe.yml --max-epoch 50 --cnn mobilenet --base-model attention --num-feature 1280 --num-head 10 --nms-thresh 0.4 
 
+# python train.py anchor-free --model-dir ../models/af_mobilenet_bilstm --splits ../splits/tvsum.yml ../splits/summe.yml --max-epoch 50 --cnn mobilenet --base-model bilstm --num-feature 1280 --nms-thresh 0.4 
+
+# python train.py anchor-based --model-dir ../models/ab_mobilenet_bilstm --splits ../splits/tvsum.yml ../splits/summe.yml --max-epoch 50 --cnn mobilenet --base-model bilstm --num-feature 1280 --nms-thresh 0.4 
+
+# python train.py anchor-based --model-dir ../models/ab_squeeze --splits ../splits/tvsum.yml ../splits/summe.yml --max-epoch 50 --cnn squeeze --base-model attention --num-feature 1000 --num-head 10 --num-hidden 125 --nms-thresh 0.4 
+
 
 import logging
 

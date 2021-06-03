@@ -10,6 +10,12 @@
 # python evaluate.py anchor-based --model-dir ../models/ab_mobilenet_lstm/ --splits ../splits/tvsum.yml ../splits/summe.yml --cnn mobilenet --segment_algo kts --base-model lstm --num-feature 1280
 
 # python evaluate.py anchor-free --model-dir ../models/af_mobilenet/ --splits ../splits/tvsum.yml ../splits/summe.yml --cnn mobilenet --segment_algo kts --base-model attention --num-head 10 --num-feature 1280
+# python evaluate.py anchor-free --model-dir ../models/af_mobilenet_bilstm --splits ../splits/tvsum.yml ../splits/summe.yml --cnn mobilenet --segment_algo kts --base-model bilstm --num-feature 1280 --nms-thresh 0.4 
+# python evaluate.py anchor-free --model-dir ../models/af_lenet --splits ../splits/tvsum.yml ../splits/summe.yml --cnn lenet --segment_algo kts --base-model attention --num-feature 1024 --nms-thresh 0.4 
+
+
+# python evaluate.py anchor-based --model-dir ../models/ab_mobilenet_bilstm/ --splits ../splits/tvsum.yml ../splits/summe.yml --cnn mobilenet --segment_algo kts --base-model bilstm --num-feature 1280
+
 
 
 import logging
