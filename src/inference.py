@@ -2,6 +2,7 @@
 ## PRE-TRAINED MODELS
 # python inference.py anchor-free --model-dir ../models/pretrain_af_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --cnn default --segment_algo kts --nms-thresh 0.4 --video_name Fire_Domino.mp4
 # python inference.py anchor-based --model-dir ../models/pretrain_ab_basic/ --splits ../splits/tvsum.yml ../splits/summe.yml --cnn default --segment_algo kts --video_name Fire_Domino.mp4
+# python inference.py anchor-free --model-dir ../models/af_squeeze/ --splits ../splits/tvsum.yml ../splits/summe.yml --cnn squeeze --segment_algo osg_sem --num-feature 1000 --num-head 8 --num-hidden 125 --nms-thresh 0.4 --video_name Fire_Domino.mp4
 
 ## CUSTOM MODELS
 # python inference.py anchor-based --model-dir ../models/ab_tvsum_aug/ --splits ../splits/tvsum_aug.yml --cnn default --segment_algo kts --video_name Fire_Domino.mp4
@@ -38,7 +39,7 @@ from helpers.data_helper import scale
 from modules.model_zoo import get_model
 
 # Features Extraction functions
-from feature_extraction import FeatureExtractor
+# from feature_extraction import FeatureExtractor
 from feature_extraction import generate_bgr_hist
 from sklearn import preprocessing
 

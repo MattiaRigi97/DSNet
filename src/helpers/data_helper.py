@@ -42,6 +42,12 @@ class VideoDataset(object):
         seq_squeeze = video_file['seq_squeeze'][...].astype(np.float32)
         seq_resnet = video_file['seq_resnet'][...].astype(np.float32)
 
+        seq_lenet_c = video_file['seq_lenet_c'][...].astype(np.float32)
+        seq_alexnet_c = video_file['seq_alexnet_c'][...].astype(np.float32)
+        seq_mobilenet_c = video_file['seq_mobilenet_c'][...].astype(np.float32)
+        seq_squeeze_c = video_file['seq_squeeze_c'][...].astype(np.float32)
+        seq_resnet_c = video_file['seq_resnet_c'][...].astype(np.float32)
+
         cps_osg = video_file['change_points_osg'][...].astype(np.int32)
         cps_osg_sem = video_file['change_points_osg_sem'][...].astype(np.int32)
         cps_pyths = video_file['change_points_pyths'][...].astype(np.int32)
@@ -51,6 +57,12 @@ class VideoDataset(object):
         cps_squeeze = video_file['cps_squeeze'][...].astype(np.int32)
         cps_resnet = video_file['cps_resnet'][...].astype(np.int32)
 
+        cps_lenet_c = video_file['cps_lenet_c'][...].astype(np.int32)
+        cps_alexnet_c = video_file['cps_alexnet_c'][...].astype(np.int32)
+        cps_mobilenet_c = video_file['cps_mobilenet_c'][...].astype(np.int32)
+        cps_squeeze_c = video_file['cps_squeeze_c'][...].astype(np.int32)
+        cps_resnet_c = video_file['cps_resnet_c'][...].astype(np.int32)
+
         cps_default = video_file['change_points'][...].astype(np.int32)
         seq_default = video_file['features'][...].astype(np.float32)
         nfps_default = video_file['n_frame_per_seg'][...].astype(np.int32)
@@ -58,6 +70,8 @@ class VideoDataset(object):
         return filename, key, n_frames, picks, gtscore, user_summary, gtsummary, \
                 seq_default, cps_default, nfps_default, \
                 seq_lenet, seq_alexnet, seq_mobilenet, seq_squeeze, seq_resnet, \
+                seq_lenet_c, seq_alexnet_c, seq_mobilenet_c, seq_squeeze_c, seq_resnet_c, \
+                cps_lenet_c, cps_alexnet_c, cps_mobilenet_c, cps_squeeze_c, cps_resnet_c, \
                 cps_osg, cps_osg_sem, cps_pyths, cps_lenet, cps_alexnet, cps_mobilenet, cps_squeeze, cps_resnet
 
     def __len__(self):

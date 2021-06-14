@@ -27,7 +27,7 @@ def xavier_init(module):
 
 
 def train(args, split, save_path):
-    print(args.num_feature)
+    # print(args.num_feature)
     model = DSNet(base_model=args.base_model, num_feature=args.num_feature,
                   num_hidden=args.num_hidden, anchor_scales=args.anchor_scales,
                   num_head=args.num_head)
@@ -57,6 +57,8 @@ def train(args, split, save_path):
         for _, _, n_frames, picks, gtscore, _, _, \
             seq_default, cps_default, nfps_default, \
             seq_lenet, seq_alexnet, seq_mobilenet, seq_squeeze, seq_resnet, \
+            seq_lenet_c, seq_alexnet_c, seq_mobilenet_c, seq_squeeze_c, seq_resnet_c, \
+            cps_lenet_c, cps_alexnet_c, cps_mobilenet_c, cps_squeeze_c, cps_resnet_c, \
             _, _, _, cps_lenet, cps_alexnet, cps_mobilenet, cps_squeeze, cps_resnet in train_loader:
             
             if cnn == "default":
@@ -65,26 +67,30 @@ def train(args, split, save_path):
                 nfps = nfps_default
             else: 
                 if cnn == "lenet":
-                    seq = seq_lenet
-                    change_points = cps_lenet
+                    seq = seq_lenet_c
+                    change_points = cps_lenet_c
                 if cnn == "alexnet":
-                    seq = seq_alexnet
-                    change_points = cps_alexnet
+                    seq = seq_alexnet_c
+                    change_points = cps_alexnet_c
                 if cnn == "mobilenet":
-                    seq = seq_mobilenet
-                    change_points = cps_mobilenet
+                    seq = seq_mobilenet_c
+                    change_points = cps_mobilenet_c
                 if cnn == "squeeze":
-                    seq = seq_squeeze
-                    change_points = cps_squeeze
+                    seq = seq_squeeze_c
+                    change_points = cps_squeeze_c
                 if cnn == "resnet":
-                    seq = seq_resnet
-                    change_points = cps_resnet
+                    seq = seq_resnet_c
+                    change_points = cps_resnet_c
 
                 begin_frames = change_points[:-1]
                 end_frames = change_points[1:]
                 cps = np.vstack((begin_frames, end_frames)).T
                 # Here, the change points are detected (Change-point positions t0, t1, ..., t_{m-1})
                 nfps = end_frames - begin_frames
+
+            #seq = seq_resnet
+            #cps = cps_default
+            #nfps = nfps_default
 
             # Obtain a keyshot summary from gtscore (the 1D-array with shape (n_steps), 
             # stores ground truth improtance score (used for training)

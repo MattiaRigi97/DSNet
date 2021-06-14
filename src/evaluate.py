@@ -5,6 +5,7 @@
 
 ## CUSTOM MODELS
 # python evaluate.py anchor-based --model-dir ../models/ab_tvsum_aug/ --splits ../splits/tvsum_aug.yml --cnn default --segment_algo us
+# python evaluate.py anchor-based --model-dir ../models/ab_tvsum_aug/ --splits ../splits/tvsum_aug.yml --cnn default --segment_algo us
 
 # python evaluate.py anchor-based --model-dir ../models/ab_mobilenet/ --splits ../splits/tvsum.yml ../splits/summe.yml --cnn mobilenet --segment_algo kts --base-model attention --num-head 10 --num-feature 1280
 # python evaluate.py anchor-based --model-dir ../models/ab_mobilenet_lstm/ --splits ../splits/tvsum.yml ../splits/summe.yml --cnn mobilenet --segment_algo kts --base-model lstm --num-feature 1280
@@ -15,6 +16,8 @@
 
 
 # python evaluate.py anchor-based --model-dir ../models/ab_mobilenet_bilstm/ --splits ../splits/tvsum.yml ../splits/summe.yml --cnn mobilenet --segment_algo kts --base-model bilstm --num-feature 1280
+
+ # python evaluate.py anchor-based --model-dir ../models/ab_mobilenet_def_kts/ --splits ../splits/tvsum.yml ../splits/summe.yml --cnn mobilenet --segment_algo kts --base-model attention --num-feature 1280
 
 
 
@@ -41,36 +44,39 @@ def evaluate(model, cnn, seg_algo, val_loader, nms_thresh, device):
         for _, test_key, n_frames, picks, _, user_summary, _, \
         seq_default, cps_default, nfps_default, \
         seq_lenet, seq_alexnet, seq_mobilenet, seq_squeeze, seq_resnet, \
+        seq_lenet_c, seq_alexnet_c, seq_mobilenet_c, seq_squeeze_c, seq_resnet_c, \
+        cps_lenet_c, cps_alexnet_c, cps_mobilenet_c, cps_squeeze_c, cps_resnet_c, \
         cps_osg, cps_osg_sem, cps_pyths, cps_lenet, cps_alexnet, cps_mobilenet, cps_squeeze, cps_resnet in val_loader:
-
+            
             if cnn == "default":
                 seq = seq_default
-                change_points = cps_default
+                cps = cps_default
                 nfps = nfps_default
             else: 
                 if cnn == "lenet":
-                    seq = seq_lenet
-                    change_points = cps_lenet
+                    seq = seq_lenet_c
+                    change_points = cps_lenet_c
                 if cnn == "alexnet":
-                    seq = seq_alexnet
-                    change_points = cps_alexnet
+                    seq = seq_alexnet_c
+                    change_points = cps_alexnet_c
                 if cnn == "mobilenet":
-                    seq = seq_mobilenet
-                    # seq = seq[:,0:1024]
-                    print(seq.shape)
-                    change_points = cps_mobilenet
+                    seq = seq_mobilenet_c
+                    change_points = cps_mobilenet_c
                 if cnn == "squeeze":
-                    seq = seq_squeeze
-                    change_points = cps_squeeze
+                    seq = seq_squeeze_c
+                    change_points = cps_squeeze_c
                 if cnn == "resnet":
-                    seq = seq_resnet
-                    change_points = cps_resnet
+                    seq = seq_resnet_c
+                    change_points = cps_resnet_c
 
                 begin_frames = change_points[:-1]
                 end_frames = change_points[1:]
                 cps = np.vstack((begin_frames, end_frames)).T
                 # Here, the change points are detected (Change-point positions t0, t1, ..., t_{m-1})
                 nfps = end_frames - begin_frames
+
+            cps = cps_default
+            nfps = nfps_default
 
             # print("MIN: "+str(seq.min()))
             # print("MAX: "+str(seq.max()))
@@ -120,12 +126,8 @@ def evaluate(model, cnn, seg_algo, val_loader, nms_thresh, device):
             # print("pred_boxes shape: " + str(pred_bboxes.shape) + "\n")
             
             # VIDEO SEGMENTATION
-
-            if seg_algo == "kts":
-                cps = cps_default
-                nfps = nfps_default
-
-            else:
+            
+            if cnn != "default" and seg_algo != "kts":
 
                 if seg_algo == "osg":
                     change_points = cps_osg
@@ -150,7 +152,7 @@ def evaluate(model, cnn, seg_algo, val_loader, nms_thresh, device):
                 cps = np.vstack((begin_frames, end_frames)).T
                 # Here, the change points are detected (Change-point positions t0, t1, ..., t_{m-1})
                 nfps = end_frames - begin_frames  # For each segment, calculate the number of frames
-
+            
             # Convert predicted bounding boxes to summary
             pred_summ = vsumm_helper.bbox2summary(seq_len, pred_cls, pred_bboxes, cps, n_frames, nfps, picks)
 

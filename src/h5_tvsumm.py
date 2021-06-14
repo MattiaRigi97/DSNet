@@ -85,6 +85,7 @@ def extract_features(model, frames, shape):
     with torch.no_grad():
         seq = []
         for frame in frames:
+            frame = frame[:,:,::-1]
             im = Image.fromarray(frame)
             input_tensor = preprocess(im)
             input_batch = input_tensor.unsqueeze(0) # create a mini-batch as expected by the model
@@ -120,13 +121,16 @@ for name in video_names:
     i += 1
     # Save the filename
     video_name = name[1] + str(".mp4")
-    """
-    filename = video_path + "\\" + str(video_name)
-    f.create_dataset(name[0] + '/filename', data=filename)
     
+    filename = video_path + "\\" + str(video_name)
+
+    """
+    f.create_dataset(name[0] + '/filename', data=filename)
+
+    video, frames, frames_sel, n_frame_video = open_video(video_name, video_path, sampling_interval = 60)
+        
     ### CPS FOR OSG
     # Create the histogram of colors
-    video, frames, frames_sel, n_frame_video = open_video(video_name, video_path, sampling_interval = 60)
     hist = generate_bgr_hist(frames_sel, num_bins = 16)
     f.create_dataset(name[0] + '/rgb_hist', data=hist)
     # Compute the distance matrix
@@ -175,21 +179,21 @@ for name in video_names:
     change_points = np.hstack((0, change_points)) # append 0 from the change point list
     f.create_dataset(name[0] + '/change_points_pyths', data = change_points)
 
-    print("**** " + str(num) + " Video Processed ****")"""
+    print("**** " + str(i) + " Video Processed ****")"""
 
     video, frames, frames_sel, n_frame_video = open_video(video_name, video_path, sampling_interval=15)
-
+    
     seq_lenet = extract_features(model_lenet, frames_sel, shape_lenet)
     seq_alexnet = extract_features(model_alexnet, frames_sel, shape_alexnet)
     seq_mobilenet = extract_features(model_mobilenet, frames_sel, shape_mobilenet)
     seq_squeeze = extract_features(model_squeeze, frames_sel, shape_squeeze)
     seq_resnet = extract_features(model_resnet, frames_sel, shape_resnet)
 
-    f.create_dataset(name[0] + '/seq_lenet', data = seq_lenet)
-    f.create_dataset(name[0] + '/seq_alexnet', data = seq_alexnet)
-    f.create_dataset(name[0] + '/seq_mobilenet', data = seq_mobilenet)
-    f.create_dataset(name[0] + '/seq_squeeze', data = seq_squeeze)
-    f.create_dataset(name[0] + '/seq_resnet', data = seq_resnet)
+    f.create_dataset(name[0] + '/seq_lenet_c', data = seq_lenet)
+    f.create_dataset(name[0] + '/seq_alexnet_c', data = seq_alexnet)
+    f.create_dataset(name[0] + '/seq_mobilenet_c', data = seq_mobilenet)
+    f.create_dataset(name[0] + '/seq_squeeze_c', data = seq_squeeze)
+    f.create_dataset(name[0] + '/seq_resnet_c', data = seq_resnet)
 
     cps_lenet = find_cps(seq_lenet)
     cps_alexnet = find_cps(seq_alexnet)
@@ -197,11 +201,11 @@ for name in video_names:
     cps_squeeze = find_cps(seq_squeeze)
     cps_resnet = find_cps(seq_resnet)
 
-    f.create_dataset(name[0] + '/cps_lenet', data = cps_lenet)
-    f.create_dataset(name[0] + '/cps_alexnet', data = cps_alexnet)
-    f.create_dataset(name[0] + '/cps_mobilenet', data = cps_mobilenet)
-    f.create_dataset(name[0] + '/cps_squeeze', data = cps_squeeze)
-    f.create_dataset(name[0] + '/cps_resnet', data = cps_resnet)
+    f.create_dataset(name[0] + '/cps_lenet_c', data = cps_lenet)
+    f.create_dataset(name[0] + '/cps_alexnet_c', data = cps_alexnet)
+    f.create_dataset(name[0] + '/cps_mobilenet_c', data = cps_mobilenet)
+    f.create_dataset(name[0] + '/cps_squeeze_c', data = cps_squeeze)
+    f.create_dataset(name[0] + '/cps_resnet_c', data = cps_resnet)
 
     print("**** " + str(i) + " Video Processed ****")
 
