@@ -1,5 +1,6 @@
 import h5py
 import numpy as np
+import pickle
 
 filename = r'C:\Users\matti\github\DSNet\datasets\eccv16_dataset_summe_google_pool5.h5'
 #filename = r'C:\Users\matti\github\DSNet\datasets\eccv16_dataset_tvsum_google_pool5.h5'
@@ -33,7 +34,7 @@ with h5py.File(filename, "r") as f:
 	print(variables)
 	print("\n")
 
-	video_i = "video_11"
+	video_i = "video_1"
 
 	print(f[video_i]["video_name"][()].decode("utf-8"))
 	# print(np.asarray(f[video_i]["features"]))
@@ -41,48 +42,19 @@ with h5py.File(filename, "r") as f:
 	# print(f[video_i]["features"][0][0:20])
 
 	print("******* DEFAULT FEATURES **********")
-	print(f[video_i]["features"][:])
+	print(f[video_i]["features"][:3])
 	print(f[video_i]["features"][:].min())
 	print(f[video_i]["features"][:].max())
 	print(f[video_i]["features"][:].mean())
 	print("\n")
+	pickle.dump(f[video_i]["features"][:3], open("original.pk", "wb"))
 	
 	print("******* LENET FEATURES **********")
+	print(f[video_i]["seq_lenet"][:3])
 	print(f[video_i]["seq_lenet"].shape)
 	print(f[video_i]["seq_lenet"][:].min())
 	print(f[video_i]["seq_lenet"][:].max())
 	print(f[video_i]["seq_lenet"][:].mean())
 	print("\n")
+	pickle.dump(f[video_i]["seq_lenet"][:3], open("mattialenet.pk", "wb"))
 
-	print("******* FEATURES **********")
-	print(f[video_i]["seq_alexnet"].shape)
-	print(f[video_i]["seq_mobilenet"].shape)
-	print(f[video_i]["seq_squeeze"].shape)
-	print(f[video_i]["seq_resnet"].shape)
-	print("\n")
-
-	print("******* CPS **********")
-	print(f[video_i]["change_points"].shape)
-	print(f[video_i]["cps_lenet"].shape)
-	print(f[video_i]["cps_alexnet"].shape)
-	print(f[video_i]["cps_mobilenet"].shape)
-	print(f[video_i]["cps_squeeze"].shape)
-	print(f[video_i]["cps_resnet"].shape)
-	print("\n")
-
-	#print(f[video_i]["n_frames"][()])
-	#print(f[video_i]["change_points"][:])
-	#print(f[video_i]["cps_lenet"][:])
-	#print(f[video_i]["cps_alexnet"][:])
-	#print(f[video_i]["cps_mobilenet"][:])
-
-# RETRIEVE THE video_i | video_name relationship for SUMME Dataset
-filename = r'C:\Users\matti\github\DSNet\datasets\eccv16_dataset_summe_google_pool5.h5'
-with h5py.File(filename, "r") as f:
-    video_names = []
-    for i in range(1, len(f) + 1):
-        video_name = str("video_") + str(i)
-        video_names.append([video_name, f[video_name]["video_name"][()].decode("utf-8")])
-
-# video_names[i] = name = [video_1, "Air_Force_One"]
-print(video_names)

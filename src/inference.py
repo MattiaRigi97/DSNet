@@ -203,18 +203,15 @@ def inference(model, feat_extr, shape, filename, frames, n_frame_video, seg_algo
 def main():
 
     args = init_helper.get_arguments()
+    print(args)
 
-    init_helper.init_logger(args.model_dir, args.log_file)
-    init_helper.set_random_seed(args.seed)
-
-    logger.info(vars(args))
-
-    print(vars(args))
+    print(args.model)
 
     # Load the model
     model = get_model(args.model, **vars(args))
     model = model.eval().to(args.device)
-
+    print(args.splits)
+    
     for split_path in args.splits:
         split_path = Path(split_path)
         splits = data_helper.load_yaml(split_path)
